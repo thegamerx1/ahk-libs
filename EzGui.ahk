@@ -1,0 +1,463 @@
+#Include <ezConf>
+#Include <functionsahkshouldfuckinghave>
+#Include <FileInstall>
+
+class EzGui {
+	__New(creator, config := "", options := "") {
+		defaultconf := {resize: false
+			,caption: true
+			,w: 400
+			,h: 300
+			,margin: 10
+			,dark: true
+			,fixsize: false
+			,title: "EzGui"
+			,autosize: false
+			,browser: false
+			,bordersize: 5
+			,injectdefault: true}
+
+
+		this.config := ezConf(config, defaultconf)
+		this.creator := creator
+		this.parentname := creator.__Class
+		this.initGui()
+		this.resetFont()
+	}
+
+	initGui() {
+		local
+		global BrowserEvent
+		this.controls := {}
+		conf := this.config
+		if conf.handleExit
+			OnExit(ObjBindMethod(this, "handleExit"), -1)
+		Gui new, % "+LastFound +hwndhGui -DPIScale +OwnDialogs " conf.options, % conf.title
+		this.controls.gui := hGui
+		if conf.owner && !conf.browser
+			this.options("+Owner" conf.owner)
+		if conf.resize
+			this.options("+resize")
+		if conf.dark && !conf.browser
+			Gui Color, 1d1f21, 282a2e
+		if conf.browser {
+			static wb
+			conf.margin := 0
+			w := conf.w
+			h := conf.h
+			m := conf.margin
+
+
+			; yoinked code from neutron.ahk by geekdude
+			EXE_NAME := A_IsCompiled ? A_ScriptName : StrSplit(A_AhkPath, "\").Pop()
+			KEY_FBE := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION"
+			RegWrite REG_DWORD, % KEY_FBE, % EXE_NAME, 11001
+
+			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, Shell.Explorer
+			this.wb := wb
+			this.controls.wb := hwb
+
+			ComObjConnect(wb, new BrowserEvent)
+			if A_IsCompiled {
+				wb.Navigate("about:blank")
+				this.doc.write(GetScriptResource(conf.browserhtml "minify/index.html"))
+				this.doc.close()
+			} else {
+				wb.Navigate(A_WorkingDir "\" conf.browserhtml "index.html")
+			}
+
+			VarSetCapacity(margins, 16, 0)
+			NumPut(1, &margins, 0, "Int")
+			DllCall("Dwmapi\DwmExtendFrameIntoClientArea"
+			, "UPtr", hGui      ; HWND hWnd
+			, "UPtr", &margins) ; MARGINS *pMarInset
+			Gui Color, 0, 0
+			VarSetCapacity(wcad, A_PtrSize+A_PtrSize+4, 0)
+			NumPut(19, &wcad, 0, "Int")
+			VarSetCapacity(accent, 16, 0)
+			NumPut(3, &accent, 0, "Int")
+			NumPut(&accent, &wcad, A_PtrSize, "Ptr")
+			NumPut(16, &wcad, A_PtrSize+A_PtrSize, "Int")
+			DllCall("SetWindowCompositionAttribute", "UPtr", hGui, "UPtr", &wcad)
+			ControlGet, hWnd, hWnd,, Internet Explorer_Server1, % "ahk_id" hGui
+			this.hIES := hWnd
+			this.wb.RegisterAsDropTarget := False
+			DllCall("ole32\RevokeDragDrop", "UPtr", this.hIES)
+			; end yoinked code
+
+			while wb.readyState < 4
+				Sleep 50
+
+			this.wnd.ahk := this.creator
+			this.wnd.gui := this
+			this.wnd.ready()
+		}
+		Gui Margin, % conf.margin, % conf.margin
+	}
+
+	wnd {
+		get {
+			return this.wb.Document.parentWindow
+		}
+	}
+
+	doc {
+		get {
+			return this.wb.Document
+		}
+	}
+
+	run(what) {
+		run %what%
+	}
+
+	log(sad) {
+		debug.print(sad)
+	}
+
+	qs(selector) {
+		return this.doc.querySelector(selector)
+	}
+
+	handleExit(Reason, Code) {
+		if (ifIn(Reason, "Shutdown") || Code == -1) {
+			return
+		}
+		if IsObject(this.creator.shouldExit) {
+			if !this.creator.shouldExit() {
+				return 1
+			}
+		}
+		return
+	}
+
+	exit() {
+		ExitApp 0
+	}
+
+	close() {
+		if IsObject(this.creator.close) {
+			return this.creator.close()
+		} else {
+			ExitApp 0
+		}
+	}
+
+	minimize() {
+		Gui % this.controls.gui ":minimize"
+	}
+
+	maximize() {
+		Gui % this.controls.gui ":maximize"
+	}
+
+	AddControl(name, options := "", value := "") {
+		if (RegExMatch(options, "O)v(?<id>\w+)", match)) {
+			id := match.id
+			options := StrReplace(options, match.0, "+hwndhwnd")
+		}
+
+		Gui % this.controls.gui ":add", %name%, %options%, %value%
+		if (id)
+			this.controls[id] := hwnd
+	}
+
+	resetFont() {
+		Gui Font
+		Gui Font, cababab
+	}
+
+	focus() {
+		Gui % this.controls.gui ":Default"
+	}
+
+	toggle() {
+		this.visible := !this.visible
+	}
+
+	CaptionMove() {
+		PostMessage 0xA1, 2,,, % "ahk_id " this.controls.gui
+	}
+
+	Options(options) {
+		Gui % this.controls.gui ":" options
+	}
+
+	NoDrawUpdate(control, value) {
+		GuiControl -Redraw, %control%
+		GuiControl,, %control%, %value%
+		GuiControl +Redraw, %control%
+	}
+
+	visible {
+		get {
+			return this._visible
+		}
+
+		set {
+			this.focus()
+			conf := this.config
+			this._visible := value
+			if (value) {
+				w := conf.w
+				h := conf.h
+				if conf.fixsize {
+				VarSetCapacity(rect, 16, 0)
+				DllCall("AdjustWindowRectEx"
+				, "Ptr", &rect ;  LPRECT lpRect
+				, "UInt", 0x80CE0000 ;  DWORD  dwStyle
+				, "UInt", 0 ;  BOOL   bMenu
+				, "UInt", 0 ;  DWORD  dwExStyle
+				, "UInt") ; BOOL
+				w += NumGet(&rect, 0, "Int")-NumGet(&rect, 8, "Int")
+				h += NumGet(&rect, 4, "Int")-NumGet(&rect, 12, "Int")
+					if !conf.resize {
+						w += 10
+						h += 10
+					}
+				}
+				Gui Show, % (conf.autosize ? "AutoSize" : "w" w " h" h) " " conf.showoptions
+			} else {
+				Gui hide
+			}
+		}
+	}
+
+
+	Delete() {
+		this.messages.Delete()
+		this.messages := ""
+
+		this.events.Delete()
+		this.events := ""
+
+		this.animations.Delete()
+		this.animations := ""
+
+		Gui % this.controls.gui ":Destroy"
+		this.creator := ""
+	}
+
+	__Delete() {
+		Debug.print("Deleted EzGui of " this.parentname)
+	}
+
+	initHooks() {
+		if !this.config.browser {
+			this.creator.buildGui(this)
+
+
+			this.events := new EventManager(this)
+			this.creator.events(this.events)
+		}
+		this.messages := new MessageManager(this)
+		this.initMessages()
+		this.creator.messages(this.messages)
+	}
+
+	initMessages() {
+		conf := this.config
+		if (conf.dark && !conf.browser) {
+			this.messages.add(0x0135, "WM_CTLCOLORBTN", true)
+		}
+
+		this.messages.add(0x112, "WM_SYSCOMMAND", true)
+
+		if !conf.caption {
+			this.messages.add(0x84, "WM_NCHITTEST", true)
+			this.messages.add(0x83, "WM_NCCALCSIZE", true)
+			this.messages.add(0x86, "WM_NCACTIVATE", true)
+		}
+
+		if conf.browser {
+			this.messages.add(0x06, "WM_ACTIVATE", true)
+		}
+
+		if conf.resize {
+			this.messages.add(0x5, "WM_SIZE", true)
+		}
+	}
+
+	WM_CTLCOLORBTN(wParam, lParam) {
+		GuiColor = 1d1f21
+		B := SubStr(GuiColor, 5, 2)
+		G := SubStr(GuiColor, 3, 2)
+		R := SubStr(GuiColor, 1, 2)
+		return DllCall("Gdi32.dll\CreateSolidBrush", "UInt", "0x" B G R)
+	}
+
+	WM_ACTIVATE(wParam, lParam, args*) {
+		if (A_Gui != this.controls.gui)
+			return
+
+		this.wnd.activate(wParam)
+	}
+
+	WM_SYSCOMMAND(wParam, lParam, args*) {
+		if (A_Gui != this.controls.gui)
+			return
+
+		switch wParam {
+			Case "0xF020":
+				return this.minimize()
+			Case "0xF060":
+				return this.close()
+		}
+	}
+
+	WM_NCCALCSIZE(wParam, lParam, Msg, hWnd) {
+		if (A_Gui != this.controls.gui)
+			return
+
+		if (this.config.browser) {
+			if !DllCall("IsZoomed", "UPtr", hWnd)
+				return 0
+			; else crop borders to prevent screen overhang
+
+			; Query for the window's border size
+			VarSetCapacity(windowinfo, 60, 0)
+			NumPut(60, windowinfo, 0, "UInt")
+			DllCall("GetWindowInfo", "UPtr", hWnd, "UPtr", &windowinfo)
+			cxWindowBorders := NumGet(windowinfo, 48, "Int")
+			cyWindowBorders := NumGet(windowinfo, 52, "Int")
+
+			; Inset the client rect by the border size
+			NumPut(NumGet(lParam+0, "Int") + cxWindowBorders, lParam+0, "Int")
+			NumPut(NumGet(lParam+4, "Int") + cyWindowBorders, lParam+4, "Int")
+			NumPut(NumGet(lParam+8, "Int") - cxWindowBorders, lParam+8, "Int")
+			NumPut(NumGet(lParam+12, "Int") - cyWindowBorders, lParam+12, "Int")
+			return 0
+		}
+	}
+
+	WM_NCACTIVATE(args*) {
+		if (A_Gui != this.controls.gui)
+			return
+
+		return 1
+	}
+
+
+	WM_NCHITTEST(wParam, lParam, args*) {
+		if (A_Gui != this.controls.gui)
+			return
+
+		x := lParam<<48>>48
+		y := lParam<<32>>48
+		WinGetPos wX, wY, wW, wH, % "ahk_id" this.controls.gui
+
+		row := (x < wX + this.config.bordersize) ? 1 : (x >= wX + wW - this.config.bordersize) ? 3 : 2
+		col := (y < wY + this.config.bordersize) ? 1 : (y >= wY + wH - this.config.bordersize) ? 3 : 2
+
+		HT_VALUES := [[13, 12, 14], [10, 1, 11], [16, 15, 17]]
+		return HT_VALUES[col, row]
+	}
+
+
+	WM_SIZE(wParam, lParam, args*) {
+		if (A_Gui != this.controls.gui)
+			Return
+
+		if this.config.browser {
+			w := lParam<<48>>48
+			h := lParam<<32>>48
+			DllCall("MoveWindow", "UPtr", this.controls.wb, "Int", 0, "Int", 0, "Int", w, "Int", h, "UInt", 0)
+		}
+		return 1
+	}
+}
+
+class MessageManager {
+	__New(_this) {
+		this._this := _this
+		this.messages := {}
+	}
+
+	Add(num, bind, isEventHook := false) {
+		bindie := (isEventHook) ? this._this : this._this.creator
+		this.messages[num] := {num: num, obj: ObjBindMethod(bindie, bind)}
+		OnMessage(num, this.messages[num].obj)
+	}
+
+	Remove(name) {
+		if !IsObject(this.messages[name]) {
+			Throw "Message " name " not found!"
+		}
+
+		data := this.messages[name]
+		OnMessage(data.num, data.obj, 0)
+		this.messages.delete(name)
+	}
+
+	Delete() {
+		for key, value in this.messages {
+			this.Remove(key)
+		}
+
+		this.parentname := this._this.parentname
+		this._this := ""
+	}
+
+	__Delete() {
+		debug.print("Deleted Message Manager of " this.parentname, "Debug")
+	}
+}
+
+class EventManager {
+	__New(_this) {
+		this._this := _this
+		this.list := {}
+	}
+
+	Add(id, functionname) {
+		hwnd := this._this.controls[id]
+		if !hwnd
+			Throw "Id not found!"
+		this.list[hwnd] := {}
+		handler := this.list[hwnd].handler := ObjBindMethod(this._this.creator, functionname)
+		GuiControl +g, %hwnd%, %handler%
+	}
+
+	Delete() {
+		for key, value in this.list {
+			GuiControl -g, %key%
+		}
+		this.parentname := this._this.parentname
+		this._this := ""
+	}
+
+	__Delete() {
+		debug.print("Deleted Event Manager of " this.parentname, "Debug")
+	}
+}
+
+class BrowserEvent {
+	DocumentComplete(wb) {
+		this.doc := wb.Document
+		ComObjConnect(this.doc, new BrowserEvent)
+	}
+
+	OnKeyPress(doc) {
+		local
+		static keys := {1: {name: "selectall"}, 3:{name: "copy", allow: true}, 22:{name: "paste"}, 24:{name: "cut"}}
+		static inputs := ["input", "textarea", "code"]
+		keyCode := doc.parentWindow.event.keyCode
+		if keys.HasKey(keyCode) {
+			allow := false
+			key := keys[keyCode]
+			if key.allow {
+				allow := true
+			} else {
+				for _, input in inputs {
+					if (doc.activeElement.tagName = input) {
+						allow := true
+						break
+					}
+				}
+			}
+			if allow {
+				doc.ExecCommand(key.name)
+			}
+		}
+	}
+}
