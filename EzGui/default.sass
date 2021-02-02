@@ -27,7 +27,7 @@ main
 		flex-grow: 2.5
 
 input::-ms-clear
-    display: none
+	display: none
 
 *:focus
 	outline: none !important
@@ -142,6 +142,21 @@ ahk-nav header
 	to
 		transform: rotate(360deg)
 
+.progress
+	position: relative
+	> span
+		font-family: Consolas
+		font-size: medium
+		position: absolute
+		left: 0
+		right: 0
+		display: flex
+		justify-content: center
+		align-items: center
+		bottom: 0
+		top: 0
+
+
 .loader::before
 	content: ''
 	display: inline-block
@@ -171,7 +186,7 @@ ahk-nav header
 		max-width: 100%
 
 .notransition
-	transition: .1s
+	transition: .05s
 
 .action-modal
 	.modal-dialog
