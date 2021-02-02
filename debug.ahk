@@ -3,7 +3,7 @@
 class Debug {
 	init(options := "") {
 		this.initiated := true
-		defaultconf := {stamp: false, stampformat:"[{:02}:{:02}:{:02}.{:03u}] "}
+		defaultconf := {stamp: false, stampformat:"[{:02}:{:02}:{:02}] "}
 		this.config := ezConf(options, defaultconf)
 
 		if (this.config.console) {
@@ -49,15 +49,16 @@ class Debug {
 		if !(this.initiated)
 			Throw "Not initiated yet!"
 
-		if IsObject(message)
-			message := Json.dump(message)
+		config := ezConf(options, {onlyStdOut: false, newline: "`n", pretty: false})
 
-		config := ezConf(options, {onlyStdOut: false, newline: "`n"})
+		if IsObject(message)
+			message := Json.dump(message, 1, config.pretty)
+
 
 		prefix := ""
 		out := ""
 		if (this.config.stamp)
-			prefix .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec, A_MSec)
+			prefix .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec)
 
 		if (label)
 			prefix .= "[" label "] "
@@ -75,7 +76,7 @@ class Debug {
 		if (this._attachEdit.enabled && !config.onlyStdOut) {
 			GuiControlGet textbefore,, % this._attachEdit.hwnd
 			GuiControl,, % this._attachEdit.hwnd, % textbefore out
-			; SendMessage 0x115, 7, 0,, % "ahk_id " this._attachEdit.hwnd
+			SendMessage 0x115, 7, 0,, % "ahk_id " this._attachEdit.hwnd
 		}
 
 
