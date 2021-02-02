@@ -11,7 +11,7 @@ SetBatchLines -1
 AutoTrim Off
 ListLines Off
 SendMode Input
-SetWorkingDir % A_ScriptDir
+SetWorkingDir %A_ScriptDir%
 DetectHiddenWindows On
 
 SetKeyDelay, 50, 50
