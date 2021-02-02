@@ -3,7 +3,7 @@
 #Include <FileInstall>
 
 class EzGui {
-	__New(creator, config := "", options := "") {
+	__New(creator, config := "") {
 		defaultconf := {resize: false
 			,caption: true
 			,w: 400
@@ -11,11 +11,11 @@ class EzGui {
 			,margin: 10
 			,dark: true
 			,fixsize: false
+			,vsync: false
 			,title: "EzGui"
 			,autosize: false
 			,browser: false
-			,bordersize: 5
-			,injectdefault: true}
+			,bordersize: 5}
 
 
 		this.config := ezConf(config, defaultconf)
@@ -38,29 +38,28 @@ class EzGui {
 			this.options("+Owner" conf.owner)
 		if conf.resize
 			this.options("+resize")
-		if conf.dark && !conf.browser
+		if conf.vsync
+			this.options("+E0x02000000 +E0x00080000")
+		if conf.dark
 			Gui Color, 1d1f21, 282a2e
 		if conf.browser {
 			static wb
-			conf.margin := 0
 			w := conf.w
 			h := conf.h
 			m := conf.margin
-
 
 			; yoinked code from neutron.ahk by geekdude
 			EXE_NAME := A_IsCompiled ? A_ScriptName : StrSplit(A_AhkPath, "\").Pop()
 			KEY_FBE := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION"
 			RegWrite REG_DWORD, % KEY_FBE, % EXE_NAME, 11001
 
-			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, Shell.Explorer
+			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, about:blank
 			this.wb := wb
 			this.controls.wb := hwb
 
 			ComObjConnect(wb, new BrowserEvent)
 			if A_IsCompiled {
-				wb.Navigate("about:blank")
-				this.doc.write(GetScriptResource(conf.browserhtml "minify/index.html"))
+				this.doc.write(GetScriptResource("index.html"))
 				this.doc.close()
 			} else {
 				wb.Navigate(A_WorkingDir "\" conf.browserhtml "index.html")
@@ -71,28 +70,50 @@ class EzGui {
 			DllCall("Dwmapi\DwmExtendFrameIntoClientArea"
 			, "UPtr", hGui      ; HWND hWnd
 			, "UPtr", &margins) ; MARGINS *pMarInset
-			Gui Color, 0, 0
 			VarSetCapacity(wcad, A_PtrSize+A_PtrSize+4, 0)
 			NumPut(19, &wcad, 0, "Int")
 			VarSetCapacity(accent, 16, 0)
 			NumPut(3, &accent, 0, "Int")
 			NumPut(&accent, &wcad, A_PtrSize, "Ptr")
 			NumPut(16, &wcad, A_PtrSize+A_PtrSize, "Int")
-			DllCall("SetWindowCompositionAttribute", "UPtr", hGui, "UPtr", &wcad)
-			ControlGet, hWnd, hWnd,, Internet Explorer_Server1, % "ahk_id" hGui
-			this.hIES := hWnd
-			this.wb.RegisterAsDropTarget := False
-			DllCall("ole32\RevokeDragDrop", "UPtr", this.hIES)
+			DllCall("SetWindowCompositionAttribute", "UPtr", this.controls.gui, "UPtr", &wcad)
+			this.wb.RegisterAsDropTarget := false
 			; end yoinked code
 
-			while wb.readyState < 4
+			tries := 0
+			while (wb.readyState < 4) {
+				if (tries > 50*100) { ; 5s
+					this.fatalError("Waiting timed out (readyState)")
+				}
 				Sleep 50
+				tries++
+			}
+
+			ControlGet, IES, hwnd,, Internet Explorer_Server1, % "ahk_id" this.controls.gui
+			this.controls.IES := IES
+			DllCall("ole32\RevokeDragDrop", "UPtr", IES)
 
 			this.wnd.ahk := this.creator
 			this.wnd.gui := this
+			this.wnd.console := this.console
+			if !A_IsCompiled {
+				tries := 0
+				while (!this.wnd.inject.done) {
+					if (tries > 50*100) { ; 5s
+						this.fatalError("Waiting timed out (inject)")
+					}
+					Sleep 50
+					tries++
+				}
+			}
 			this.wnd.ready()
 		}
 		Gui Margin, % conf.margin, % conf.margin
+	}
+
+	fatalError(what) {
+		Msgbox 16, Fatal error, EzGui encountered a fatal error in `n%what%
+		ExitApp 1
 	}
 
 	wnd {
@@ -107,22 +128,20 @@ class EzGui {
 		}
 	}
 
-	run(what) {
-		run %what%
-	}
+	class console {
+		log(a) {
+			debug.print(a)
+		}
 
-	log(sad) {
-		debug.print(sad)
-	}
-
-	qs(selector) {
-		return this.doc.querySelector(selector)
+		error(a) {
+			Msgbox % a
+		}
 	}
 
 	handleExit(Reason, Code) {
-		if (ifIn(Reason, "Shutdown") || Code == -1) {
+		if (ifIn(Reason, "Shutdown") || Code == -1)
 			return
-		}
+
 		if IsObject(this.creator.shouldExit) {
 			if !this.creator.shouldExit() {
 				return 1
@@ -151,7 +170,7 @@ class EzGui {
 		Gui % this.controls.gui ":maximize"
 	}
 
-	AddControl(name, options := "", value := "") {
+	AddControl(byref name, options := "", value := "") {
 		if (RegExMatch(options, "O)v(?<id>\w+)", match)) {
 			id := match.id
 			options := StrReplace(options, match.0, "+hwndhwnd")
@@ -160,6 +179,30 @@ class EzGui {
 		Gui % this.controls.gui ":add", %name%, %options%, %value%
 		if (id)
 			this.controls[id] := hwnd
+	}
+
+	ControlGet(byref name) {
+		local control := this.controls[name]
+		if !control
+			Throw Exception("No control found: " name, -1)
+		return control
+	}
+
+	setControl(byref name, byref value) {
+		local control := this.GetControl(name)
+		GuiControl,, %control%, %value%
+	}
+
+	getControl(byref name) {
+		local value
+		local control := this.ControlGet(name)
+		GuiControlGet value,, %control%
+		return value
+	}
+
+	optionControl(byref name, byref option) {
+		local control := this.ControlGet(name)
+		GuiControl %option% +Redraw, %control%
 	}
 
 	resetFont() {
@@ -183,12 +226,6 @@ class EzGui {
 		Gui % this.controls.gui ":" options
 	}
 
-	NoDrawUpdate(control, value) {
-		GuiControl -Redraw, %control%
-		GuiControl,, %control%, %value%
-		GuiControl +Redraw, %control%
-	}
-
 	visible {
 		get {
 			return this._visible
@@ -202,15 +239,15 @@ class EzGui {
 				w := conf.w
 				h := conf.h
 				if conf.fixsize {
-				VarSetCapacity(rect, 16, 0)
-				DllCall("AdjustWindowRectEx"
-				, "Ptr", &rect ;  LPRECT lpRect
-				, "UInt", 0x80CE0000 ;  DWORD  dwStyle
-				, "UInt", 0 ;  BOOL   bMenu
-				, "UInt", 0 ;  DWORD  dwExStyle
-				, "UInt") ; BOOL
-				w += NumGet(&rect, 0, "Int")-NumGet(&rect, 8, "Int")
-				h += NumGet(&rect, 4, "Int")-NumGet(&rect, 12, "Int")
+					VarSetCapacity(rect, 16, 0)
+					DllCall("AdjustWindowRectEx"
+					, "Ptr", &rect ;  LPRECT lpRect
+					, "UInt", 0x80CE0000 ;  DWORD  dwStyle
+					, "UInt", 0 ;  BOOL   bMenu
+					, "UInt", 0 ;  DWORD  dwExStyle
+					, "UInt") ; BOOL
+					w += NumGet(&rect, 0, "Int")-NumGet(&rect, 8, "Int")
+					h += NumGet(&rect, 4, "Int")-NumGet(&rect, 12, "Int")
 					if !conf.resize {
 						w += 10
 						h += 10
@@ -231,9 +268,6 @@ class EzGui {
 		this.events.Delete()
 		this.events := ""
 
-		this.animations.Delete()
-		this.animations := ""
-
 		Gui % this.controls.gui ":Destroy"
 		this.creator := ""
 	}
@@ -246,10 +280,10 @@ class EzGui {
 		if !this.config.browser {
 			this.creator.buildGui(this)
 
-
 			this.events := new EventManager(this)
 			this.creator.events(this.events)
 		}
+
 		this.messages := new MessageManager(this)
 		this.initMessages()
 		this.creator.messages(this.messages)
@@ -271,6 +305,7 @@ class EzGui {
 
 		if conf.browser {
 			this.messages.add(0x06, "WM_ACTIVATE", true)
+			this.messages.add(0x100, "WM_KEYDOWN", true)
 		}
 
 		if conf.resize {
@@ -284,6 +319,21 @@ class EzGui {
 		G := SubStr(GuiColor, 3, 2)
 		R := SubStr(GuiColor, 1, 2)
 		return DllCall("Gdi32.dll\CreateSolidBrush", "UInt", "0x" B G R)
+	}
+
+	WM_KEYDOWN(wParam, lParam, Msg) {
+		if (Chr(wParam) ~= "[A-Z]" || wParam = 0x74)
+			return
+		pipa := ComObjQuery(this.wb, "{00000117-0000-0000-C000-000000000046}")
+		VarSetCapacity(kMsg, 48), NumPut(A_GuiY, NumPut(A_GuiX
+		, NumPut(A_EventInfo, NumPut(lParam, NumPut(wParam
+		, NumPut(Msg, NumPut(this.controls.IES, kMsg)))), "uint"), "int"), "int")
+		Loop 2
+			r := DllCall(NumGet(NumGet(1*pipa)+5*A_PtrSize), "ptr", pipa, "ptr", &kMsg)
+		until wParam != 9 || this.wb.Document.activeElement != ""
+			ObjRelease(pipa)
+		if r = 0
+			return 0
 	}
 
 	WM_ACTIVATE(wParam, lParam, args*) {
@@ -305,51 +355,31 @@ class EzGui {
 		}
 	}
 
-	WM_NCCALCSIZE(wParam, lParam, Msg, hWnd) {
+	WM_NCCALCSIZE(wParam, lParam) {
 		if (A_Gui != this.controls.gui)
 			return
-
-		if (this.config.browser) {
-			if !DllCall("IsZoomed", "UPtr", hWnd)
-				return 0
-			; else crop borders to prevent screen overhang
-
-			; Query for the window's border size
-			VarSetCapacity(windowinfo, 60, 0)
-			NumPut(60, windowinfo, 0, "UInt")
-			DllCall("GetWindowInfo", "UPtr", hWnd, "UPtr", &windowinfo)
-			cxWindowBorders := NumGet(windowinfo, 48, "Int")
-			cyWindowBorders := NumGet(windowinfo, 52, "Int")
-
-			; Inset the client rect by the border size
-			NumPut(NumGet(lParam+0, "Int") + cxWindowBorders, lParam+0, "Int")
-			NumPut(NumGet(lParam+4, "Int") + cyWindowBorders, lParam+4, "Int")
-			NumPut(NumGet(lParam+8, "Int") - cxWindowBorders, lParam+8, "Int")
-			NumPut(NumGet(lParam+12, "Int") - cyWindowBorders, lParam+12, "Int")
-			return 0
-		}
+		return 0
 	}
 
 	WM_NCACTIVATE(args*) {
 		if (A_Gui != this.controls.gui)
 			return
-
 		return 1
 	}
 
 
 	WM_NCHITTEST(wParam, lParam, args*) {
+		static HT_VALUES := [[13, 12, 14], [10, 1, 11], [16, 15, 17]]
 		if (A_Gui != this.controls.gui)
 			return
-
+		border := this.config.bordersize
 		x := lParam<<48>>48
 		y := lParam<<32>>48
 		WinGetPos wX, wY, wW, wH, % "ahk_id" this.controls.gui
 
-		row := (x < wX + this.config.bordersize) ? 1 : (x >= wX + wW - this.config.bordersize) ? 3 : 2
-		col := (y < wY + this.config.bordersize) ? 1 : (y >= wY + wH - this.config.bordersize) ? 3 : 2
+		row := (x < wX + border) ? 1 : (x >= wX + wW - border) ? 3 : 2
+		col := (y < wY + border) ? 1 : (y >= wY + wH - border) ? 3 : 2
 
-		HT_VALUES := [[13, 12, 14], [10, 1, 11], [16, 15, 17]]
 		return HT_VALUES[col, row]
 	}
 
