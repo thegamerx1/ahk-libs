@@ -12,13 +12,13 @@ class VCP {
 
 	get(code) {
 		DllCall("dxva2\GetVCPFeatureAndVCPFeatureReply", "int", this.handle, "char", code, "Ptr", 0, "uint*", currentValue, "uint*", maximumValue)
-		return [currentValue, maximumValue]
+		return {current: currentValue, max: maximumValue}
 	}
 
-	close() {
+	delete() {
 		DllCall("dxva2\DestroyPhysicalMonitor", "int", this.handle)
 	}
 	__Delete() {
-		this.close()
+		this.delete()
 	}
 }
