@@ -63,3 +63,8 @@ killPid(pid) {
 getPath(pathwithFile) {
 	return RegExReplace(pathwithFile, "m)\w+\.\w+$")
 }
+
+regex(string, regex, flags := "") {
+	RegExMatch(string, "`aO" flags ")" regex, match)
+	return match
+}
