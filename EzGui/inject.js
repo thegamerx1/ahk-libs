@@ -3,27 +3,34 @@ document.ondragstart = function () { return false }
 
 window.onload = function () {
 	function injectcss(url) {
-		let element = document.createElement("link")
+		let element = createElement("link")
 		element.rel = "stylesheet"
 		element.href = url
 		element.type = "text/css"
-		element.async = false
-		element.onload = function () {inject.count++;injectCheck()}
-		document.body.appendChild(element)
-		inject.countTo++
+		addElement(element)
 	}
 	function injectjs(url) {
-		let element = document.createElement("script")
+		let element = createElement("script")
 		element.src = url
+		addElement(element)
+	}
+
+	function createElement(name) {
+		let element = document.createElement(name)
 		element.async = false
-		element.onload = function () {inject.count++;injectCheck()}
-		document.body.appendChild(element)
+		element.onload = injectCheck.bind(1)
+		element.onerror = function() {console.error("error in " + name)}
+		return element
+	}
+
+	function addElement(element) {
 		inject.countTo++
+		document.body.appendChild(element)
 	}
 
 	if (typeof inject == "undefined") {
 		inject = {}
-		inject.path = "file:///C:/Users/TheGamerX05/Documents/Autohotkey/Lib/EzGui/"
+		inject.path = "file:///C:/Users/TheGamerX/Documents/Autohotkey/Lib/EzGui/"
 	}
 
 	inject.count = 0
@@ -36,15 +43,18 @@ window.onload = function () {
 	injectjs(inject.path + "libs/webcomponents.js")
 	injectjs(inject.path + "minify/titlebar.js")
 	injectjs(inject.path + "libs/bootstrap.min.js")
-	console.log("INJECTED HGARD")
+	console.log("INJECTED")
 }
 
 
-function injectCheck() {
+function injectCheck(inc) {
+	if (inc) inject.count++
 	if (inject.count >= inject.countTo) {
+		console.log("All injected")
 		if (!window.document.documentMode) {
 			enableDebug()
 		}
+		inject.done = true
 	}
 }
 
