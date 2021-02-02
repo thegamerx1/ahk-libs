@@ -9,7 +9,7 @@ class timer {
 			try {
 				SetTimer % func, % interval
 			} catch e {
-				Throw "Error creating timer: " e.message " " e.extra
+				Throw Exception("Error creating timer: " e.message, -1)
 			}
 		}
 	}
