@@ -1,3 +1,5 @@
+;; ? Modified from some stackoverflow question
+
 #include <requests>
 #include <timer>
 
@@ -16,6 +18,7 @@ class fileDownloader {
 		}
 		this.LastSizeTick := 0
 		this.LastSize := 0
+		progressFunc.call(-1, this.FinalSize/(1024*2) "MB")
 		this.timer := new timer(ObjBindMethod(this, "check"), 250)
 		UrlDownloadToFile %url%, %saveTo%
 		progressFunc.call(101)
@@ -32,12 +35,15 @@ class fileDownloader {
             SpeedUnit := "MB/s"
             Speed := Round(Speed/1024, 2)
         }
+		if (!speed) {
+			speed = "Unkown"
+		}
 
 
         if this.FinalSize {
             PercentDone := Round(this.CurrentSize/this.FinalSize*100)
         } else {
-            PercentDone := 50
+            PercentDone := 10
         }
 
         this.LastSizeTick := this.CurrentSizeTick
