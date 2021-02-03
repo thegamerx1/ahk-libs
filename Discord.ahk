@@ -1,26 +1,25 @@
 ;; ? Modified from https://github.com/G33kDude/Discord.ahk
-
 #include <WebSocket>
 #include <requests>
 
 class Discord {
 	static BaseURL := "https://discordapp.com/api/"
+	reconnects := 0
 
 	__New(parent, token, intent) {
 		this.intent := intent
-		this.creator := parent
 		this.token := token
-		this.reconnects := 0
+		this.creator := parent
 		this.connect()
 	}
 
-	connect() {
-		; Get the gateway websocket URL
-		URL := this.CallAPI("GET", "gateway/bot").url
+	setResume(sessionid, seq) {
+		this.resumedata := {session: sessionid, seq: seq}
+	}
 
-		; connecc to discord
+	connect() {
+		URL := this.CallAPI("GET", "gateway/bot").url
 		this.ws := new WebSocket(this, URL "?v=8&encoding=json")
-		this.reconnects++
 	}
 
 	disconnect() {
@@ -72,9 +71,8 @@ class Discord {
 		activity := []
 		if (playing)
 			activity.push({name: playing, type: type})
-		this.send(
-		( LTrim Join
-		{
+		this.Send({
+		(Join
 			op: 3,
 			d: {
 				since: "null",
@@ -82,35 +80,35 @@ class Discord {
 				status: status,
 				afk: false
 			}
-		}
-		))
+		)})
 	}
 
-	; ? Sends a message to a channel
-	;; TODO: EMBEDS
 	SendMessage(channel_id, content) {
-		if (content.__Class == "Embed") {
+		msg := this.getMsg(content)
+		return this.CallAPI("POST", "channels/" channel_id "/messages", msg)
+	}
+
+	getMsg(content) {
+		if (content.__Class = "Discord.embed") {
 			msg := content.get()
 		} else {
 			msg := {content: content}
 		}
-		return this.CallAPI("POST", "channels/" channel_id "/messages", msg)
+		return msg
 	}
 
-	;; TODO: finish
-	EditMessage(message_id, content) {
-		return this.CallAPI("PATCH", "PATCH/webhooks/{application.id}/{interaction.token}/messages/{message.id}")
+	EditMessage(channel_id, message_id, content) {
+		msg := this.getMsg(content)
+		return this.CallAPI("PATCH", "channels/" channel_id "/messages/" message_id, msg)
 	}
 
-	/*
-		? Websocket functions
-	*/
+	AddReaction(channel_id, message_id, emote) {
+		return this.CallAPI("PUT", "channels/" channel_id "/messages/" message_id "/reactions/" urlEncode(emote) "/@me")
+	}
 
 	identify() {
-		; ? indentify ourself
-		this.Send(
-		( LTrim Join
-		{
+		data := this.Send({
+		(Join
 			op: 2,
 			d: {
 				token: this.token,
@@ -131,8 +129,21 @@ class Discord {
 				compress: true,
 				large_threshold: 250
 			}
-		}
-		))
+		)})
+	}
+
+	resume() {
+		debug.print("Trying to resume with session")
+		resumedata := this.resumedata
+		this.Send({
+		(Join
+			op: 6,
+			d: {
+				token: this.token,
+				session_id: resumedata.session,
+				seq: resumedata.seq
+			}
+		)})
 	}
 
 	OnMessage(Event) {
@@ -142,7 +153,8 @@ class Discord {
 		if Data.s
 			this.Seq := Data.s
 
-		debug.print(Data.op ", " Data.t)
+		if data.op != 0
+			debug.print("OP: " Data.op ", " Data.t)
 		this["OP" Data.op](Data)
 	}
 
@@ -151,7 +163,11 @@ class Discord {
 		Interval := Data.d.heartbeat_interval
 		fn := ObjBindMethod(this, "SendHeartbeat")
 		SetTimer %fn%, %Interval%
-		this.identify()
+		; if (this.resumedata) {
+			; this.resume()
+		; } else {
+			this.identify()
+		; }
 	}
 
 	OP11(Data) { ; ? OP 11 Heartbeat ACK
@@ -159,19 +175,25 @@ class Discord {
 	}
 
 	OP9(Data) { ; ? Invalid session
+		; throw Exception("Invalid session")
 		if (this.reconnects > 2) {
 			throw Exception("Tried to reconnect too many times", -1)
 		}
+
 		Debug.print("Attempting to reconnect to disco api")
-		this.disconnect()
+		sleep % random(1000, 5000)
 		sleep 1000
-		this.connect()
+		this.identify()
 	}
 
 	OP0(Data) { ; ? OP 0 Dispatch
 		fn := this.creator["E_" Data.t]
 		if !fn
 			Debug.print("Event not handled: " data.t)
+		if (Data.t == "MESSAGE_CREATE")
+			Data.d := new this.message(this, Data.d)
+		if (Data.t == "READY")
+			this.session_id := Data.d.session_id
 		%fn%(this.creator, Data.d)
 	}
 
@@ -200,7 +222,7 @@ class Discord {
 		this.Send({op: 1, d: this.Seq})
 	}
 
-	class Embed {
+	class embed {
 		__New(text := "") {
 			this.content := text
 			this.embed := {}
@@ -213,11 +235,33 @@ class Discord {
 			if fields
 				obj.fields := fields
 			this.embed := obj
-
 		}
 
 		get() {
 			return {content: this.content, embed: this.embed}
+		}
+	}
+
+	class message {
+		__New(api, data) {
+			this.data := data
+			this.api := api
+			this.author := data.author
+			this.guild := this.api.creator.cache.guild[data.guild_id]
+		}
+
+		react(reaction) {
+			this.api.AddReaction(this.data.channel_id, this.data.id, reaction)
+		}
+
+		reply(data) {
+			msg := this.api.SendMessage(this.data.channel_id, data)
+			return new this.api.message(this.api, msg)
+		}
+
+		edit(data) {
+			debug.print(this.data)
+			this.api.EditMessage(this.data.channel_id, this.data.id, data)
 		}
 	}
 }

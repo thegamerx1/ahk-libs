@@ -7,7 +7,7 @@ class Debug {
 		this.config := ezConf(options, defaultconf)
 
 		if (this.config.console) {
-			DllCall("AttachConsole", int, -1)
+			DllCall("AllocConsole")
 			OnExit(ObjBindMethod(this, "clean"))
 		}
 
@@ -17,7 +17,9 @@ class Debug {
 		this.log := ""
 	}
 
-	clean() {
+	clean(reason, code) {
+		if code != 0
+			sleep 5000
 		DllCall("FreeConsole")
 	}
 
@@ -82,7 +84,7 @@ class Debug {
 
 		if (!this.errorStdOut) {
 			try {
-				FileAppend, %out%, *
+				FileAppend %out%, *
 			} catch e {
 				this.errorStdOut := true
 			}
