@@ -1,6 +1,7 @@
 ;; ? Modified from https://github.com/G33kDude/WebSocket.ahk
 class WebSocket {
 	__New(creator, WS_URL) {
+		static wb
 		static html = "
 		(
 			<!DOCTYPE html>
@@ -9,14 +10,13 @@ class WebSocket {
 			function start(url, ahk_event) {
 				ws = new WebSocket(url);
 				ws.onopen = function(event){ ahk_event('Open', event) };
-				ws.onclose = function(event, code){ ahk_event('Close',  event.reason, event.code)};
+				ws.onclose = function(event){ ahk_event('Close',  event.reason, event.code)};
 				ws.onerror = function(event){ ahk_event('Error', event) };
 				ws.onmessage = function(event){ ahk_event('Message', event) };
 			}
 			</script>
 		)"
 		this.creator := creator
-		static wb
 		; ? Create an IE instance
 		Gui +hWndhOld
 		Gui New, +hWndhWnd
