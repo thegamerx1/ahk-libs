@@ -10,12 +10,13 @@ class WebSocket {
 			function start(url, ahk_event) {
 				ws = new WebSocket(url);
 				ws.onopen = function(event){ ahk_event('Open', event) };
-				ws.onclose = function(event){ ahk_event('Close',  event.reason, event.code)};
-				ws.onerror = function(event){ ahk_event('Error', event) };
+				ws.onclose = function(event){ ahk_event('Close', event.reason, event.code)};
+				ws.onerror = function(event){ ahk_event('Error', event.reason, event.code)};
 				ws.onmessage = function(event){ ahk_event('Message', event) };
 			}
 			</script>
 		)"
+
 		this.creator := creator
 		; ? Create an IE instance
 		Gui +hWndhOld

@@ -8,14 +8,10 @@ class fileDownloader {
 		this.url := url
 		this.saveTo := saveTo
 		this.progressFunc := progressFunc
-		http := new requests(url, "HEAD")
+		http := new requests("HEAD", url)
 		response := http.send()
-		debug.print(response)
-		try {
-			this.FinalSize := response.http.GetResponseHeader("Content-Length")
-		} catch {
-			this.FinalSize := false
-		}
+		this.FinalSize := response.headers["Content-Length"]
+
 		this.LastSizeTick := 0
 		this.LastSize := 0
 		progressFunc.call(-1, this.FinalSize/(1024*2) "MB")
@@ -35,7 +31,7 @@ class fileDownloader {
             SpeedUnit := "MB/s"
             Speed := Round(Speed/1024, 2)
         }
-		if (!speed) {
+		if !speed {
 			speed = "Unkown"
 		}
 

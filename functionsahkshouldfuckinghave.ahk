@@ -7,11 +7,11 @@ isNull(var) {
 		return true
 }
 
-Array2String(array) {
-	result := ""
-	for index, value in array
-		result .= value " "
-	return result
+Array2String(array, delimiter := " ") {
+	out := ""
+	for _, v in array
+		out .= v delimiter
+	return out
 }
 
 ObjectMerge(array1, array2) {
@@ -32,28 +32,13 @@ InRegion(x, y ,x1, y1, x2, y2) {
 	return (x >= x1) && (x <= x2) && (y >= y1) && (y <= y2)
 }
 
-ListBoxGetRow(value, column := 1) {
-	Loop % LV_GetCount()
-	{
-		LV_GetText(text, A_Index, column)
-		if (text = name)
-			break
-	}
-	return A_Index
-}
-
-contains(object, string, reverse := false) {
+contains(byref string, byref object, isObject := false) {
 	for key, value in object {
-		data := (reverse) ? key : value
+		data := isObject ? key : value
 		if (data = string)
 			return A_Index
 	}
 	return 0
-}
-
-ifIn(var,matchlist){
-    if var in %matchlist%
-        return 1
 }
 
 killPid(pid) {
@@ -67,4 +52,80 @@ getPath(pathwithFile) {
 regex(string, regex, flags := "") {
 	RegExMatch(string, "`aO" flags ")" regex, match)
 	return match
+}
+
+niceDate(ms) {
+	total_seconds := floor(ms / 1000)
+	total_minutes := floor(total_seconds / 60)
+	total_hours := floor(total_minutes / 60)
+	days := floor(total_hours / 24)
+	seconds := Mod(total_seconds, 60)
+	minutes := Mod(total_minutes, 60)
+	hours := Mod(total_hours, 24)
+	return format("{}d {}h {}m {}s", days, hours, minutes, seconds)
+}
+
+random(min:=0, max:=1) {
+	if IsObject(min) {
+		return min[random(1,min.length())]
+	}
+	Random result, Min, Max
+	Return result
+}
+
+randomSeed(seed := "") {
+	if !seed
+		seed := random(0, 2147483647)
+	random,, %seed%
+}
+
+strDiff(str,str2) {
+	; ? TAKEN FROM: https://github.com/Chunjee/string-similarity.ahk
+	; * Sørensen-Dice coefficient
+	static oArray := {base:{__Get:Func("Abs").Bind(0)}}
+
+	vCount := 0
+	Loop % vCount1 := StrLen(str) - 1
+		oArray["z" SubStr(str, A_Index, 2)]++
+	Loop % vCount2 := StrLen(str2) - 1
+		if (oArray["z" SubStr(str2, A_Index, 2)] > 0) {
+			oArray["z" SubStr(str2, A_Index, 2)]--
+			vCount++
+		}
+
+	vSDC := (2 * vCount) / (vCount1 + vCount2)
+
+	return vSDC
+}
+
+strDiffBest(array, to) {
+	best := ""
+	for _, value in array {
+		percent := strDiff(value, to)
+		if (percent > best.percent) {
+			best := {str: value, percent: percent}
+		}
+	}
+	return best
+}
+
+strMultiply(byref str, times) {
+	out := ""
+	Loop % times
+		out .= str
+	return out
+}
+
+ClipBoardPaste(text) {
+	oldclipboard := clipboard
+	clipboard := ""
+	clipboard := text
+	ClipWait 1
+	send {Ctrl down}v{Ctrl up}
+	sleep 50
+	clipboard := oldclipboard
+}
+
+TimeOnce(fn, time := 1000) {
+	SetTimer %fn%, -%time%
 }

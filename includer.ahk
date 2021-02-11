@@ -1,3 +1,4 @@
+#include <functionsahkshouldfuckinghave>
 class includer {
 	init(pathToFolder) {
 		this.list := {}
@@ -22,8 +23,12 @@ class includer {
 			file := FileOpen(this.file, "w")
 			file.write(checklist)
 			file.close()
-			Reload
-			ExitApp 0
+			this.restart()
 		}
+	}
+
+	restart() {
+		Run % A_AhkPath " /restart """ A_ScriptFullPath """" Array2String(A_Args)
+		ExitApp 69
 	}
 }
