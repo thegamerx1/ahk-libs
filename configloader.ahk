@@ -14,7 +14,7 @@ class configloader {
 	}
 
 	fixfile() {
-		debug.print("Fixing", this.file)
+		debug.print("Fixing", {label: this.file})
 
 		file := FileOpen(this.file, "w")
 		file.Write(JSON.dump(this.default))
@@ -23,15 +23,14 @@ class configloader {
 	}
 
 	loadfile() {
-		this.data := Objectmerge(JSON.Load(fileopen(this.file, "r").read()), this.default)
+		this.data := ObjectMerge(JSON.Load(fileopen(this.file, "r").read()), this.default)
 	}
 
 	save() {
-		debug.print("Saving", this.file)
+		debug.print("Saving", {label: this.file})
 
 		file := FileOpen(this.file, "w")
-		data := JSON.Dump(this.data)
-		file.write(data)
+		file.write(JSON.Dump(this.data))
 		file.close()
 	}
 }

@@ -21,5 +21,3 @@ urlEncode(str) {
 	SetFormat IntegerFast, %f%
 	Return res
 }
-
-msgbox % urlEncode("✅")

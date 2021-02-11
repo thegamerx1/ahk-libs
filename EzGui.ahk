@@ -59,7 +59,7 @@ class EzGui {
 
 			ComObjConnect(wb, new BrowserEvent)
 			if A_IsCompiled {
-				this.doc.write(GetScriptResource("index.html"))
+				this.doc.write(GetScriptResource(conf.browserhtml "minify/index.html"))
 				this.doc.close()
 			} else {
 				wb.Navigate(A_WorkingDir "\" conf.browserhtml "index.html")
@@ -98,10 +98,13 @@ class EzGui {
 			this.wnd.console := this.console
 			if !A_IsCompiled {
 				tries := 0
-				while (!this.wnd.inject.done) {
-					if (tries > 50*100) { ; 5s
+				Loop {
+					try
+						if this.wnd.inject.done
+							break
+					if (tries > 50*100) ; 5s
 						this.fatalError("Waiting timed out (inject)")
-					}
+
 					Sleep 50
 					tries++
 				}
@@ -112,7 +115,7 @@ class EzGui {
 	}
 
 	fatalError(what) {
-		Msgbox 16, Fatal error, EzGui encountered a fatal error in `n%what%
+		Msgbox 16, Fatal error, EzGui encountered a fatal error in`n%what%
 		ExitApp 1
 	}
 
@@ -139,7 +142,7 @@ class EzGui {
 	}
 
 	handleExit(Reason, Code) {
-		if (ifIn(Reason, "Shutdown") || Code == -1)
+		if (contains(Reason, ["Shutdown"]) || Code == -1)
 			return
 
 		if IsObject(this.creator.shouldExit) {
@@ -273,7 +276,7 @@ class EzGui {
 	}
 
 	__Delete() {
-		Debug.print("Deleted EzGui of " this.parentname)
+		Debug.print("|Deleted EzGui of " this.parentname)
 	}
 
 	initHooks() {
@@ -429,7 +432,7 @@ class MessageManager {
 	}
 
 	__Delete() {
-		debug.print("Deleted Message Manager of " this.parentname, "Debug")
+		debug.print("|Deleted Message Manager of " this.parentname)
 	}
 }
 
@@ -457,7 +460,7 @@ class EventManager {
 	}
 
 	__Delete() {
-		debug.print("Deleted Event Manager of " this.parentname, "Debug")
+		debug.print("|Deleted Event Manager of " this.parentname)
 	}
 }
 

@@ -2,18 +2,17 @@
 #Include <json>
 class Debug {
 	init(options := "") {
+		static defaultconf := {stamp: false, stampformat: "[{:02}:{:02}:{:02}] "}
 		this.initiated := true
-		defaultconf := {stamp: false, stampformat:"[{:02}:{:02}:{:02}] "}
 		this.config := ezConf(options, defaultconf)
 
-		if (this.config.console) {
-			DllCall("AllocConsole")
+		if this.config.console {
+			if !DllCall("AttachConsole", "Uint", -1)
+				DllCall("AllocConsole")
+
 			OnExit(ObjBindMethod(this, "clean"))
 		}
 
-		this._attachRedirect := {}
-		this._attachEdit := {}
-		this.firstmessage := 0
 		this.log := ""
 	}
 
@@ -23,72 +22,93 @@ class Debug {
 		DllCall("FreeConsole")
 	}
 
-	attachRedirect(obj) {
-		if !(this.initiated)
-			Throw "Not initiated yet!"
-		if (this._attachRedirect.enabled)
-			Throw % "Already Attached to " this._attachRedirect.func.name "!"
+	attachRedirect {
+		get {
+			return this._attachRedirect
+		}
 
-		this._attachRedirect.func := obj
-		this._attachRedirect.enabled := true
+		set {
+			if this.attachRedirect
+				Throw % "Already Attached to """ this.attachRedirect.func.name """!"
 
-		obj.call(this.log)
+			this._attachRedirect := value
+			value.call(this.log)
+		}
 	}
 
-	attachEdit(control) {
-		if !(this.initiated)
-			Throw "Not initiated yet!"
-		if (this._attachEdit.enabled)
-			Throw "Already Attached to " this._attachEdit.hwnd "!"
+	attachEdit {
+		get {
+			return this._attachEdit
+		}
 
-		this._attachEdit.hwnd := control
-		this._attachEdit.enabled := true
+		set {
+			if this.attachEdit
+				Throw % "Already Attached to """ this.attachEdit.func.name """!"
 
-		GuiControl,, % this._attachEdit.hwnd, % this.log
+			this._attachEdit := value
+			GuiControl,, % value, % this.log
+		}
 	}
 
-	print(message := "", label := "", options := "") {
-		if !(this.initiated)
-			Throw "Not initiated yet!"
+	print(message := "", options := "") {
+		static defaultconf := {label: "", newline: "`n", pretty: false}
+		static actions := [">", "|"]
 
-		config := ezConf(options, {onlyStdOut: false, newline: "`n", pretty: false})
+		config := ezConf(options, defaultconf)
+		isAction := false
+		start := SubStr(message, 1,1)
+		out := ""
 
 		if IsObject(message)
 			message := Json.dump(message, 1, config.pretty)
 
+		if contains(start, actions) {
+			isAction := true
+			message := SubStr(message, 2)
+		}
 
-		prefix := ""
-		out := ""
-		if (this.config.stamp)
-			prefix .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec)
+		if this.config.stamp
+			out .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec)
+		if config.label
+			out .= "[" config.label "] "
 
-		if (label)
-			prefix .= "[" label "] "
 
-		if (message = "") {
+		if !message {
 			out := config.newline
 		} else {
-			out .= prefix message config.newline
+			out .= message config.newline
 		}
 
-		if (this._attachRedirect.enabled && !config.onlyStdOut) {
-			this._attachRedirect.func.call(out)
+		switch start {
+			case "|":
+				OutputDebug % out
+			case ">":
+				this.std(out)
 		}
+		if isAction
+			return
 
-		if (this._attachEdit.enabled && !config.onlyStdOut) {
-			GuiControlGet textbefore,, % this._attachEdit.hwnd
-			GuiControl,, % this._attachEdit.hwnd, % textbefore out
-			SendMessage 0x115, 7, 0,, % "ahk_id " this._attachEdit.hwnd
-		}
-
-
-		if (!this.errorStdOut) {
-			try {
-				FileAppend %out%, *
-			} catch e {
-				this.errorStdOut := true
-			}
-		}
 		this.log .= out
+
+		if (this.attachRedirect)
+			this.attachRedirect.call(out)
+
+		if (this.attachEdit) {
+			GuiControlGet textbefore,, % this.attachEdit
+			GuiControl,, % this.attachEdit, % textbefore out
+			SendMessage 0x115, 7, 0,, % "ahk_id " this.attachEdit
+		}
+
+		this.std(out)
+	}
+
+	std(byref message) {
+		if this.errorStdOut
+			return
+		try {
+			FileAppend %message%, *
+		} catch e {
+			this.errorStdOut := true
+		}
 	}
 }
