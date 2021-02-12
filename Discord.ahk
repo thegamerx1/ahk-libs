@@ -44,6 +44,15 @@ class Discord {
 		this.ws := ""
 	}
 
+	reconnect(useResume) {
+		if useResume
+			this.setResume(this.session_id, this.seq)
+		fn := ObjBindMethod(this, "SendHeartbeat")
+		SetTimer %fn%, off
+		this.disconnect()
+		this.connect()
+	}
+
 	delete() {
 		this.ws.disconnect()
 		this.creator := False
@@ -205,8 +214,9 @@ class Discord {
 	}
 
 	SendHeartbeat() {
-		if !this.HeartbeatACK
-			throw Exception("Heartbeat did not respond")
+		if !this.HeartbeatACK {
+			this.reconnect(true)
+		}
 
 		this.HeartbeatACK := False
 		this.Send({op: 1, d: this.Seq})
@@ -367,9 +377,7 @@ class Discord {
 		if this.reconnects > 5 {
 			Throw Exception("Tried to reconnect too many times", "Websocket close")
 		}
-		this.setResume(this.session_id, this.seq)
-		this.disconnect()
-		this.connect()
+		this.reconnect(true)
 	}
 
 
