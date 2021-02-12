@@ -385,10 +385,10 @@ class Discord {
 		this["OP_" opname](Data)
 	}
 
-	OnError(reason := "", code := "") {
+	OnError(reason := "", code := "", message := "") {
 		; TODO FIX:
-		debug.print(format("Error, {},: {}", code, reason))
-		throw Exception(reason, code)
+		debug.print(format("Error, {},: {} {}", code, reason, message))
+		this.reconnect(true)
 	}
 
 
@@ -471,7 +471,7 @@ class Discord {
 		}
 
 		setThumbnail(img) {
-			this.embed.image := {url: img}
+			this.embed.thumbnail := {url: img}
 		}
 
 		addField(title, content, inline := false) {
