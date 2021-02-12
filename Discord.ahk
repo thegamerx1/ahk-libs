@@ -26,7 +26,6 @@ class Discord {
 		this.creator := parent
 		this.emojis := []
 		this.connect()
-		this.cache := {guild:{}, user:{}, dm:{}, msg:{}}
 	}
 
 	setResume(sessionid, seq) {
@@ -56,6 +55,13 @@ class Discord {
 	delete() {
 		this.ws.disconnect()
 		this.creator := False
+	}
+
+	class cache {
+		guild := {}
+		user := {}
+		dm := {}
+		msg := {}
 	}
 
 	class utils {
@@ -387,7 +393,7 @@ class Discord {
 
 
 	OnClose(reason := "", code := "") {
-		static allowed := [4000, 4007, 4009]
+		static allowed := [1000, 1001, 4000, 4007, 4009]
 		debug.print(format("Closed, {},: {}", code, reason))
 		if !contains(code, allowed)
 			Throw Exception("Code not allowed")
