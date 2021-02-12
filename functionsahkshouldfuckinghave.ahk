@@ -55,6 +55,7 @@ regex(string, regex, flags := "") {
 }
 
 niceDate(ms) {
+	static values := ["days", "hours", "minutes", "seconds"]
 	total_seconds := floor(ms / 1000)
 	total_minutes := floor(total_seconds / 60)
 	total_hours := floor(total_minutes / 60)
@@ -62,7 +63,12 @@ niceDate(ms) {
 	seconds := Mod(total_seconds, 60)
 	minutes := Mod(total_minutes, 60)
 	hours := Mod(total_hours, 24)
-	return format("{}d {}h {}m {}s", days, hours, minutes, seconds)
+	out := ""
+	for _, value in values {
+		if (%value% > 0)
+			out .= %value% SubStr(value, 1,1) " "
+	}
+	return out
 }
 
 random(min:=0, max:=1) {
@@ -128,4 +134,16 @@ ClipBoardPaste(text) {
 
 TimeOnce(fn, time := 1000) {
 	SetTimer %fn%, -%time%
+}
+
+strGetLast(str, limit) {
+	temp := ""
+	lines := StrSplit(str, "`n", "`r")
+	for _, line in lines {
+		if StrLen(temp line) >= limit
+			break
+
+		temp .= line "`n"
+	}
+	return temp
 }
