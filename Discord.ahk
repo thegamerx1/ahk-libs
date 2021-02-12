@@ -131,7 +131,8 @@ class Discord {
 
 		; * Request was unsuccessful
 		if (httpout.status != 200 && httpout.status != 204) {
-			throw Exception(httpout.status, "request " method " " endpoint, httpout.text)
+			debug.print("Request failed: " httpout.text)
+			return
 		}
 		return httpjson
 	}
