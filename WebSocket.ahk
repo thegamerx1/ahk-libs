@@ -11,7 +11,7 @@ class WebSocket {
 				ws = new WebSocket(url);
 				ws.onopen = function(event){ ahk_event('Open', event) };
 				ws.onclose = function(event){ ahk_event('Close', event.reason, event.code)};
-				ws.onerror = function(event){ ahk_event('Error', event.reason, event.code)};
+				ws.onerror = function(event){ ahk_event('Error', event.reason, event.code, event.message)};
 				ws.onmessage = function(event){ ahk_event('Message', event) };
 			}
 			</script>
