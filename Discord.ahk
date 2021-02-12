@@ -301,7 +301,7 @@ class Discord {
 			this.resume()
 		} else {
 			fn := ObjBindMethod(this, "identify")
-			SetTimer %fn%, -50
+			TimeOnce(fn, -50)
 		}
 	}
 
@@ -334,8 +334,7 @@ class Discord {
 				if (data.d.id = this.owner_guild) {
 					for key, value in this.cache.guild[data.d.id].emojis
 						this.emojis[value.name] := value.id
-					fn := ObjBindMethod(this, "dispatch", "READY", data.d)
-					SetTimer %fn%, -0
+					TimeOnce(ObjBindMethod(this, "dispatch", "READY", data.d), -1)
 					debug.print("READY")
 				}
 			case "GUILD_ROLE_UPDATE":
