@@ -87,7 +87,7 @@ class Debug {
 			out .= "[" config.label "] "
 
 
-		if !message {
+		if (message = "") {
 			out := config.newline
 		} else {
 			out .= message config.newline

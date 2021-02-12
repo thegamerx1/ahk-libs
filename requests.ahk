@@ -29,7 +29,7 @@ class requests {
 		if this.async {
 			this.com.OnReadyStateChange := ObjBindMethod(this, "change")
 		} else {
-			return  new requests_response(this.com)
+			return new requests_response(this.com)
 		}
 	}
 

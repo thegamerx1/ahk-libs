@@ -1,14 +1,14 @@
 #Include <json>
 #Include <functionsahkshouldfuckinghave>
-class configloader {
+class configLoader {
 	__New(file, default := "") {
 		this.file := file
 		this.default := IsObject(default) ? default : {}
-		if !(FileExist(this.file))
+		if !FileExist(this.file)
 			this.fixfile()
 
 		this.loadfile()
-		if !(isObject(this.data)) {
+		if !isObject(this.data) {
 			this.fixfile()
 		}
 	}

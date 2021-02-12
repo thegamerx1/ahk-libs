@@ -45,7 +45,7 @@ class Discord {
 	}
 
 	reconnect(useResume) {
-		if useResume
+		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 		fn := ObjBindMethod(this, "SendHeartbeat")
 		SetTimer %fn%, off
@@ -61,6 +61,11 @@ class Discord {
 	class utils {
 		init(byref parent) {
 			this.p := parent
+		}
+
+		getId(str) {
+			regex := regex(str, "(?<id>\d{9,})")
+			return regex.id
 		}
 
 		getMsg(content) {
@@ -111,7 +116,8 @@ class Discord {
 		; ? Try the request multiple times if necessary
 		Loop 2 {
 			http.headers["Authorization"] := "Bot " this.token
-			http.headers["Content-Type"] := "application/json"
+			if data
+				http.headers["Content-Type"] := "application/json"
 			http.headers["User-Agent"] := "Discord.ahk"
 			httpout := http.send(data ? JSON.dump(data) : "")
 			debug.print(format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
@@ -132,7 +138,7 @@ class Discord {
 		; * Request was unsuccessful
 		if (httpout.status != 200 && httpout.status != 204) {
 			debug.print("Request failed: " httpout.text)
-			return
+			throw Exception(httpjson.message, httpjson.code)
 		}
 		return httpjson
 	}
@@ -172,6 +178,14 @@ class Discord {
 	EditMessage(channel_id, message_id, content) {
 		msg := this.utils.getMsg(content)
 		return this.CallAPI("PATCH", "channels/" channel_id "/messages/" message_id, msg)
+	}
+
+	AddBan(guild, user, reason, delet) {
+		return this.CallAPI("PUT", "guilds/" guild "/bans/" user, {reason: reason, delete_message_days: delet})
+	}
+
+	RemoveBan(guild, user) {
+		return this.CallAPI("DELETE", "guilds/" guild "/bans/" user)
 	}
 
 	AddReaction(channel, id, emote) {
@@ -322,6 +336,7 @@ class Discord {
 						this.emojis[value.name] := value.id
 					fn := ObjBindMethod(this, "dispatch", "READY", data.d)
 					SetTimer %fn%, -0
+					debug.print("READY")
 				}
 			case "GUILD_ROLE_UPDATE":
 				index := this.utils.getRole(data.d.guild_id, data.d.role.id)
@@ -497,6 +512,12 @@ class Discord {
 					role := api.cache.guild[guild.id].roles[index]
 					perms |= role.permissions
 				}
+				if this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) {
+					for key, _ in this.permissionlist {
+						this.permissions.push(key)
+					}
+					return this
+				}
 				for _, value in this.roles {
 					overwrite := channel.getOverwrite(value)
 					if overwrite {
@@ -506,7 +527,6 @@ class Discord {
 				}
 				perms &= ~deny
 				perms |= allow
-				this.permissionsint := perms
 				for key, flag in this.permissionlist {
 					if this.checkFlag(perms, flag)
 						this.permissions.push(key)
