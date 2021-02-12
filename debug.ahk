@@ -50,6 +50,20 @@ class Debug {
 		}
 	}
 
+	attachFile {
+		get {
+			return this._attachFile
+		}
+
+		set {
+			if this.attachFile
+				Throw % "Already saving to """ this.attachFile """!"
+
+			this._attachFile := value
+			FileAppend % this.log, %value%
+		}
+	}
+
 	print(message := "", options := "") {
 		static defaultconf := {label: "", newline: "`n", pretty: false}
 		static actions := [">", "|"]
@@ -92,6 +106,9 @@ class Debug {
 
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
+
+		if (this.attachFile)
+			FileAppend %out%, % this.attachFile
 
 		if (this.attachEdit) {
 			GuiControlGet textbefore,, % this.attachEdit
