@@ -387,7 +387,10 @@ class Discord {
 
 
 	OnClose(reason := "", code := "") {
+		static allowed := [4000, 4007, 4009]
 		debug.print(format("Closed, {},: {}", code, reason))
+		if !contains(code, allowed)
+			Throw Exception("Code not allowed")
 		if this.reconnects > 5 {
 			Throw Exception("Tried to reconnect too many times", "Websocket close")
 		}
