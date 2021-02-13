@@ -137,18 +137,17 @@ TimeOnce(fn, time := 1000) {
 }
 
 strGetLast(str, limit) {
-	temp := ""
+	out := ""
 	lines := StrSplit(str, "`n", "`r")
-	for _, line in lines {
-		if StrLen(temp line) >= limit
-			break
-
-		temp .= line "`n"
+	length := Max(lines.length()-limit, 1)
+	for _, value in lines {
+		if (A_Index > length)
+			out .= value "`n"
 	}
-	return temp
+	return out
 }
 
-Time_unix2human(time) {
+Unix2Miss(time) {
     human=19700101000000
     time-=((A_NowUTC-A_Now)//10000)*3600
     human+=%time%,Seconds
