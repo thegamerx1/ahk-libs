@@ -1,4 +1,3 @@
-#include <functionsahkshouldfuckinghave>
 class requests {
 	__New(type, url, params := "", async := false) {
 		this.url := url
@@ -21,22 +20,23 @@ class requests {
 		if !this.async
 			this.com.Option(6) := this.allowredirect
 
-		for name, value in this.headers {
+		for name, value in this.headers
 			this.com.SetRequestHeader(name, value)
-		}
+
+
+		if this.async
+			this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
 
 		this.com.send(data)
-		if this.async {
-			this.com.OnReadyStateChange := ObjBindMethod(this, "change")
-		} else {
-			return new requests_response(this.com)
-		}
+
+		if !this.async
+			return new requests_response(this)
 	}
 
-	change() {
+	readyState(asd := "") {
 		if (this.com.readyState != 4)
 			return
-		this.onFinished.call(new requests_response(this.com))
+		this.onFinished.call(new requests_response(this))
 	}
 
 	encode(obj) {
@@ -49,7 +49,8 @@ class requests {
 }
 
 class requests_response {
-	__New(com) {
+	__New(http) {
+		com := http.com
 		this.status := com.status
 		this.statusText := com.statusText
 		this.text := com.responseText
