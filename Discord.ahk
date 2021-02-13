@@ -18,10 +18,10 @@ class Discord {
 					,11: "HeartbeatACK"}
 	reconnects := 0
 
-	__New(parent, token, intent, owner_guild := "") {
+	__New(parent, token, intents, owner_guild) {
 		this.utils.init(this)
 		this.cache.init(this)
-		this.intent := intent
+		this.intents := intents
 		this.token := token
 		this.owner_guild := owner_guild
 		this.creator := parent
@@ -44,11 +44,10 @@ class Discord {
 	}
 
 	reconnect(useResume) {
-		static TIMEOUT := 5*60*1000
-		debug.print("[Reconnect] #" this.reconnects)
-
-		if (this.last_reconnect.get() < TIMEOUT)
-			Throw Exception("Wont reconnect", "Crashed in the last 5mins")
+		static TIMEOUT := 2*60*1000
+		debug.print("[Reconnect] #" this.reconnects " last reconnect: " niceDate(this.last_reconnect) " ago")
+		if (this.last_reconnect+TIMEOUT > A_TickCount)
+			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
@@ -58,7 +57,7 @@ class Discord {
 		this.disconnect()
 		this.connect()
 		this.reconnects++
-		this.last_reconnect := new Counter(, true)
+		this.last_reconnect := A_TickCount
 	}
 
 	delete() {
@@ -239,7 +238,7 @@ class Discord {
 		; * Request was unsuccessful
 		if (httpout.status != 200 && httpout.status != 204) {
 			debug.print("Request failed: " httpout.text)
-			throw Exception(httpjson.message, httpjson.code)
+			throw Exception(httpjson.message, -2, httpjson.code)
 		}
 		return httpjson
 	}
@@ -371,7 +370,7 @@ class Discord {
 					status: "dnd",
 					afk: false
 				},
-				intents: this.intent,
+				intents: this.intents,
 				compress: true,
 				large_threshold: 250
 			}
@@ -473,7 +472,7 @@ class Discord {
 
 	OnClose(reason := "", code := "") {
 		static allowed := [1000, 1001, 4000, 4007, 4009]
-		debug.print(format("Closed, {}: {}", code, reason))
+		debug.print(format("[DISCORD] Closed, {}: {}", code, reason))
 		if !contains(code, allowed)
 			Throw Exception("Code not allowed")
 		this.reconnect(true)
@@ -550,11 +549,14 @@ class Discord {
 			this.embed.thumbnail := {url: img}
 		}
 
-		addField(title, content, inline := false) {
+		addField(title, content, inline := false, empty := false) {
 			if StrLen(title) > 256
 				Throw Exception("Field title too long", -1)
 			if StrLen(content) > 1024
 				Throw Exception("Field content too long", -1)
+
+			if empty
+				content := title := chr(8203)
 
 			if (StrLen(content) == 0 || StrLen(title) == 0)
 				return
