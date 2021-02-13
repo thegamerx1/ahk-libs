@@ -693,11 +693,13 @@ class Discord {
 				this.guild := new discord.guild(api, data.guild_id)
 			}
 			this.channel := new discord.channel(api, data.channel_id, this.guild)
-			this.self := new discord.author(api, api.self, this.guild, this.channel)
-			this.author := new discord.author(api, data.author, this.guild, this.channel)
-			if data.referenced_message {
-				data.referenced_message.guild_id := data.guild_id
-				this.referenced_msg := new api.message(api, data.referenced_message)
+			if !data.webhook_id {
+				this.self := new discord.author(api, api.self, this.guild, this.channel)
+				this.author := new discord.author(api, data.author, this.guild, this.channel)
+				if data.referenced_message {
+					data.referenced_message.guild_id := data.guild_id
+					this.referenced_msg := new api.message(api, data.referenced_message)
+				}
 			}
 		}
 
