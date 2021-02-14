@@ -25,7 +25,11 @@ class Discord {
 		this.owner_guild := owner_guild
 		this.creator := parent
 		this.ratelimit := {}
-		this.connect()
+		try {
+			this.connect()
+		} catch e {
+			this.reconnect()
+		}
 		this.last_reconnect := 0
 	}
 
@@ -46,7 +50,7 @@ class Discord {
 		this.ws := ""
 	}
 
-	reconnect(useResume) {
+	reconnect(useResume := false) {
 		static TIMEOUT := 2*60*1000
 		debug.print("[Reconnect] #" this.reconnects " last reconnect: " niceDate(this.last_reconnect) " ago")
 		this.disconnect()
@@ -61,7 +65,11 @@ class Discord {
 			sleep % 5*60*1000
 		}
 
-		this.connect()
+		try {
+			this.connect()
+		} catch e {
+			this.reconnect(true)
+		}
 		this.reconnects++
 	}
 
