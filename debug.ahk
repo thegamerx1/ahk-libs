@@ -65,7 +65,7 @@ class Debug {
 	}
 
 	print(message := "", options := "") {
-		static defaultconf := {label: "", newline: "`n", pretty: false}
+		static defaultconf := {label: "", end: "`n", pretty: false}
 		static actions := [">", "|"]
 
 		config := ezConf(options, defaultconf)
@@ -74,7 +74,7 @@ class Debug {
 		out := ""
 
 		if IsObject(message)
-			message := Json.dump(message, 1, config.pretty)
+			message := JSON.dump(message, 1, config.pretty)
 
 		if contains(start, actions) {
 			isAction := true
@@ -88,9 +88,9 @@ class Debug {
 
 
 		if (message = "") {
-			out := config.newline
+			out := config.end
 		} else {
-			out .= message config.newline
+			out .= message config.end
 		}
 
 		switch start {

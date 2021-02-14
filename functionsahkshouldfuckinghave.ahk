@@ -15,6 +15,7 @@ Array2String(array, delimiter := " ") {
 }
 
 ObjectMerge(array1, array2) {
+	array2 := array2.clone()
 	for key, value in array1
 		array2[key] := value
 

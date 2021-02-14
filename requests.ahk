@@ -1,3 +1,4 @@
+#include <urlCode>
 class requests {
 	__New(type, url, params := "", async := false) {
 		this.url := url
@@ -15,7 +16,11 @@ class requests {
 
 	send(data := "") {
 		this.com := ComObjCreate(this.async ? "Msxml2.XMLHTTP" : "WinHttp.WinHttpRequest.5.1")
-		this.com.open(this.type, this.url, this.async)
+		try {
+			this.com.open(this.type, this.url, this.async)
+		} catch e {
+			throw Exception("Couldn't open url", -1)
+		}
 
 		if !this.async
 			this.com.Option(6) := this.allowredirect
@@ -42,7 +47,7 @@ class requests {
 	encode(obj) {
 		out := ""
 		for key, value in obj {
-			out .= (out ? "&" : "") key "=" value
+			out .= (out ? "&" : "") key "=" UrlEncode(value)
 		}
 		return out
 	}
