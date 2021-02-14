@@ -62,7 +62,7 @@ class Discord {
 
 		while !InternetCheckConnection() {
 			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
-			sleep % 5*60*1000
+			sleep % 5*(Min(A_Index, 60)*1000
 		}
 
 		try {
