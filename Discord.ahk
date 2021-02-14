@@ -26,6 +26,7 @@ class Discord {
 		this.creator := parent
 		this.ratelimit := {}
 		this.connect()
+		this.last_reconnect := 0
 	}
 
 	setResume(sessionid, seq) {
