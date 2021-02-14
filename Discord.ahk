@@ -24,7 +24,7 @@ class Discord {
 		this.token := token
 		this.owner_guild := owner_guild
 		this.creator := parent
-		this.emojis := []
+		this.ratelimit := {}
 		this.connect()
 	}
 
@@ -33,8 +33,9 @@ class Discord {
 	}
 
 	connect() {
-		URL := this.CallAPI("GET", "gateway/bot").url
-		this.ws := new WebSocket(this, URL "?v=8&encoding=json")
+		data := this.CallAPI("GET", "gateway/bot")
+		debug.print("[DISCORD] " data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
+		this.ws := new WebSocket(this, data.url "?v=8&encoding=json")
 	}
 
 	disconnect() {
@@ -209,19 +210,28 @@ class Discord {
 		}
 	}
 
-	CallAPI(method, endpoint, data := "") {
+	CallAPI(method, endpoint, data := "", async := false) {
 		static BaseURL := "https://discord.com/api/"
-		http := new requests(method, BaseURL endpoint)
-		count := new Counter(, false)
+		http := new requests(method, BaseURL endpoint,, async)
+		count := new Counter(, true)
 		; ? Try the request multiple times if necessary
 		Loop 2 {
 			http.headers["Authorization"] := "Bot " this.token
+
 			if data
 				http.headers["Content-Type"] := "application/json"
+
 			http.headers["User-Agent"] := "Discord.ahk"
 			httpout := http.send(data ? JSON.dump(data) : "")
 			debug.print(format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
 			httpjson := httpout.json()
+			; TODO: ratelimit
+			; this.ratelimit.bucket := httpout.headers["x-ratelimit-bucket"]
+			; this.ratelimit.limit := httpout.headers["x-ratelimit-limit"]
+			; this.ratelimit.remaining := httpout.headers["x-ratelimit-remaining"]
+			; this.ratelimit.reset := httpout.headers["x-ratelimit-reset"]
+			; this.ratelimit["reset-after"] := httpout.headers["x-ratelimit-reset-after"]
+			; debug.print(this.ratelimit)
 
 			; * Handle rate limiting
 			if (httpout.status = 429) {
@@ -231,7 +241,6 @@ class Discord {
 				sleep % httpjson.retry_after
 				continue
 			}
-
 			break
 		}
 
@@ -312,11 +321,17 @@ class Discord {
 	}
 
 	BulkDelete(channel, messages) {
-		return this.CallAPI("POST" , "channels/" channel "/messages/bulk-delete", {messages: messages})
+		return this.CallAPI("POST", "channels/" channel "/messages/bulk-delete", {messages: messages})
 	}
 
 	DeleteMessage(channel, message) {
-		return this.CallAPI("DELETE" , "channels/" channel "/messages/" message)
+		return this.CallAPI("DELETE", "channels/" channel "/messages/" message)
+	}
+
+	LeaveGuild(guild) {
+		if !this.cache.guildGet(guild)
+			Throw Exception("Im not on guild " guild, -1)
+		return this.CallAPI("DELETE", "users/@me/guilds/" guild)
 	}
 
 	changeSelfNick(guild, nick) {
@@ -393,7 +408,7 @@ class Discord {
 		Interval := Data.d.heartbeat_interval
 		fn := ObjBindMethod(this, "SendHeartbeat")
 		SetTimer %fn%, % Interval
-		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 20)
+		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 0)
 	}
 
 	OP_HEARTBEATACK(Data) {
@@ -460,6 +475,8 @@ class Discord {
 
 		opname := this.OPCode[data.op]
 
+		if (opname != "dispatch")
+			debug.print("|" opname)
 		this["OP_" opname](Data)
 	}
 
@@ -596,7 +613,7 @@ class Discord {
 					role := api.cache.guildGet(guild.id).roles[index]
 					perms |= role.permissions
 				}
-				if this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) {
+				if (this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) || this.id = this.guild.owner) {
 					for key, _ in this.permissionlist {
 						this.permissions.push(key)
 					}
