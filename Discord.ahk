@@ -1,7 +1,6 @@
 ;; ? Modified from https://github.com/G33kDude/Discord.ahk
 #include <WebSocket>
 #include <requests>
-#include <urlCode>
 
 class Discord {
 	static OPCode := {0: "Dispatch"
@@ -170,6 +169,7 @@ class Discord {
 			for _, value in this.guildGet(guild).emojis
 				if (value.name = name)
 					return value.id
+			Throw Exception("Couldn't find emoji", -2, name)
 		}
 	}
 
@@ -303,7 +303,7 @@ class Discord {
 
 	RemoveReaction(channel, id, emote) {
 		if RegExMatch(emote, "^[\w#@$\?\[\]\x80-\xFF]+$")
-			emote := this.utils.getEmoji(name, false)
+			emote := this.utils.getEmoji(emote, false)
 		return this.CallAPI("DELETE", "channels/" channel "/messages/" id "/reactions/" urlEncode(emote) "/@me")
 	}
 
@@ -379,9 +379,9 @@ class Discord {
 
 	resume() {
 		debug.print("[Reconnect] Trying to resume with session")
-		resumedata := this.resumedata
+		res := this.resumedata
 		this.resumedata := ""
-		this.Send({op: 6, d: {token: this.token, session_id: resumedata.session, seq: resumedata.seq}})
+		this.Send({op: 6, d: {token: this.token, session_id: res.session, seq: res.seq}})
 	}
 
 	/*
@@ -393,7 +393,7 @@ class Discord {
 		Interval := Data.d.heartbeat_interval
 		fn := ObjBindMethod(this, "SendHeartbeat")
 		SetTimer %fn%, % Interval
-		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 50)
+		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 20)
 	}
 
 	OP_HEARTBEATACK(Data) {
@@ -402,7 +402,7 @@ class Discord {
 
 	OP_INVALIDSESSION(Data) {
 		Debug.print("[SESSION] Attempting to identify to discord api")
-		TimeOnce(ObjBindMethod(this, "identify"), random(1000, 5000))
+		TimeOnce(ObjBindMethod(this, "identify"), random(1000, 4000))
 	}
 
 	OP_Dispatch(Data) {
