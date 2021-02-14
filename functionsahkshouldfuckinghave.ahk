@@ -164,6 +164,7 @@ ConnectedToInternet(flag=0x40) {
 	Return DllCall("Wininet.dll\InternetGetConnectedState", "Str", flag, "Int", 0)
 }
 
-InternetCheckConnection(Url="",FIFC=1) {
-	Return DllCall("Wininet.dll\InternetCheckConnectionA", Str, Url, Int, FIFC, Int, 0)
+InternetCheckConnection(url) {
+	RunWait ping %url% -n 1 -l 16 -w 5000,, Hide UseErrorlevel
+	return !ErrorLevel
 }
