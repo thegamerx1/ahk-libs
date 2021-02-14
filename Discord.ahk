@@ -36,9 +36,11 @@ class Discord {
 		data := this.CallAPI("GET", "gateway/bot")
 		debug.print("[DISCORD] " data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
 		this.ws := new WebSocket(this, data.url "?v=8&encoding=json")
+		this.last_reconnect := A_TickCount
 	}
 
 	disconnect() {
+		this.connected := false
 		this.ws.disconnect()
 		this.ws := ""
 	}
@@ -46,18 +48,20 @@ class Discord {
 	reconnect(useResume) {
 		static TIMEOUT := 2*60*1000
 		debug.print("[Reconnect] #" this.reconnects " last reconnect: " niceDate(this.last_reconnect) " ago")
+		this.disconnect()
 		if (this.last_reconnect+TIMEOUT > A_TickCount)
 			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 
-		fn := ObjBindMethod(this, "SendHeartbeat")
-		SetTimer %fn%, off
-		this.disconnect()
+		while !InternetCheckConnection() {
+			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
+			sleep % 5*60*1000
+		}
+
 		this.connect()
 		this.reconnects++
-		this.last_reconnect := A_TickCount
 	}
 
 	delete() {
@@ -169,7 +173,7 @@ class Discord {
 		emojiGet(guild, name) {
 			for _, value in this.guildGet(guild).emojis
 				if (value.name = name)
-					return value.id
+					return value
 			Throw Exception("Couldn't find emoji", -2, name)
 		}
 	}
@@ -201,8 +205,9 @@ class Discord {
 		}
 
 		getEmoji(name, wrap := true) {
-			wraps := wrap ? ["<:", ">"] : []
-			return wraps[1] name ":" this.api.getEmoji(name) wraps[2]
+			emoji := this.api.getEmoji(name)
+			wraps := (wrap ? ["<" (emoji.animated ? "a" : "") ":", ">"] : [])
+			return wraps[1] name ":" emoji.id wraps[2]
 		}
 
 		sanitize(str) {
@@ -357,6 +362,8 @@ class Discord {
 	}
 
 	SendHeartbeat() {
+		if !this.connected
+			return
 		if !this.HeartbeatACK {
 			this.reconnect(true)
 			return
@@ -395,8 +402,8 @@ class Discord {
 	resume() {
 		debug.print("[Reconnect] Trying to resume with session")
 		res := this.resumedata
-		this.resumedata := ""
 		this.Send({op: 6, d: {token: this.token, session_id: res.session, seq: res.seq}})
+		this.resumedata := ""
 	}
 
 	/*
@@ -408,7 +415,8 @@ class Discord {
 		Interval := Data.d.heartbeat_interval
 		fn := ObjBindMethod(this, "SendHeartbeat")
 		SetTimer %fn%, % Interval
-		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 0)
+		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 50)
+		this.connected := true
 	}
 
 	OP_HEARTBEATACK(Data) {
@@ -592,6 +600,7 @@ class Discord {
 		static permissionlist := {ADD_REACTIONS: 0x00000040, ADMINISTRATOR: 0x00000008, ATTACH_FILES: 0x00008000, BAN_MEMBERS: 0x00000004, CHANGE_NICKNAME: 0x04000000, CONNECT: 0x00100000, CREATE_INSTANT_INVITE: 0x00000001, DEAFEN_MEMBERS: 0x00800000, EMBED_LINKS: 0x00004000, KICK_MEMBERS: 0x00000002, MANAGE_CHANNELS: 0x00000010, MANAGE_EMOJIS: 0x40000000, MANAGE_GUILD: 0x00000020, MANAGE_MESSAGES: 0x00002000, MANAGE_NICKNAMES: 0x08000000, MANAGE_ROLES: 0x10000000, MANAGE_WEBHOOKS: 0x20000000, MENTION_EVERYONE: 0x00020000, MOVE_MEMBERS: 0x01000000, MUTE_MEMBERS: 0x00400000, PRIORITY_SPEAKER: 0x00000100, READ_MESSAGE_HISTORY: 0x00010000, SEND_MESSAGES: 0x00000800, SEND_TTS_MESSAGES: 0x00001000, SPEAK: 0x00200000, STREAM: 0x00000200, USE_EXTERNAL_EMOJIS: 0x00040000, USE_VAD: 0x02000000, VIEW_AUDIT_LOG: 0x00000080, VIEW_CHANNEL: 0x00000400, VIEW_GUILD_INSIGHTS: 0x00080000}
 
 		__New(api, data, guild := "", channel := "") {
+			static avatar := "https://cdn.discordapp.com/avatars/{}/{}.webp?size=1024"
 			this.api := api
 			this.data := data
 			this.id := data.id
@@ -601,7 +610,7 @@ class Discord {
 			this.channel := channel
 			this.discriminator := data.discriminator
 			this.mention := "<@" data.id ">"
-			this.avatar := "https://cdn.discordapp.com/avatars/" this.id "/" data.avatar ".png"
+			this.avatar := format(avatar, this.id, data.avatar)
 			this.permissions := []
 			if guild {
 				member := api.getMember(guild.id, this.id)
