@@ -154,3 +154,7 @@ Unix2Miss(time) {
     human+=%time%,Seconds
     return human
 }
+
+StartsWith(str, start) {
+	return SubStr(str, 1, StrLen(start)) == start
+}
