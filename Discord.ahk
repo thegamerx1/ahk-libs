@@ -60,8 +60,12 @@ class Discord {
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 
-		while !ping("1.1.1.1") {
+		loop {
 			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
+			try
+				if ping("1.1.1.1")
+					break
+
 			sleep % 5*Min(A_Index, 60)*1000
 		}
 
