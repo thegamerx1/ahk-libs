@@ -158,3 +158,12 @@ Unix2Miss(time) {
 StartsWith(str, start) {
 	return SubStr(str, 1, StrLen(start)) == start
 }
+
+;https://autohotkey.com/board/topic/80587-how-to-find-internet-connection-status/
+ConnectedToInternet(flag=0x40) {
+	Return DllCall("Wininet.dll\InternetGetConnectedState", "Str", flag, "Int", 0)
+}
+
+InternetCheckConnection(Url="",FIFC=1) {
+	Return DllCall("Wininet.dll\InternetCheckConnectionA", Str, Url, Int, FIFC, Int, 0)
+}
