@@ -165,6 +165,6 @@ ConnectedToInternet(flag=0x40) {
 }
 
 InternetCheckConnection(url) {
-	RunWait ping %url% -n 1 -l 16 -w 5000,, Hide UseErrorlevel
+	RunWait ping %url% -n 1 -l 16 -w 5000 >nul,, Hide UseErrorlevel
 	return !ErrorLevel
 }
