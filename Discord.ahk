@@ -61,12 +61,14 @@ class Discord {
 			this.setResume(this.session_id, this.seq)
 
 		loop {
-			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
-			try
-				if ping("1.1.1.1")
+			try {
+				if ping("1.1.1.1") {
+					debug.print("[Reconnect] Got internet")
 					break
-
-			sleep % 5*Min(A_Index, 60)*1000
+				}
+			}
+			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
+			sleep % 5*Min(A_Index, 120)*1000
 		}
 
 		try {
@@ -79,7 +81,7 @@ class Discord {
 
 	delete() {
 		this.ws.disconnect()
-		this.creator := False
+		this.creator := false
 	}
 
 	class cache {
@@ -156,7 +158,7 @@ class Discord {
 		roleDelete(guild, id) {
 			for _, role in this.getGuild(guild).roles {
 				if (role.id = data.d.role_id) {
-					this.guild[guild].roles.removeAt(A_Index)
+					this.guild[guild].roles.RemoveAt(A_Index)
 					return
 				}
 			}
