@@ -63,7 +63,8 @@ class Discord {
 		loop {
 			try {
 				if ping("1.1.1.1") {
-					debug.print("[Reconnect] Got internet")
+					if A_Index > 1
+						debug.print("[Reconnect] Got internet")
 					break
 				}
 			}
@@ -198,14 +199,25 @@ class Discord {
 			this.api := parent
 		}
 
+		sendWebhook(content, webhook) {
+			http := new requests("POST", webhook,, true)
+			http.headers["Content-Type"] := "application/json"
+			http.onFinished := ObjBindMethod(this, "webhookRes")
+			http.send(JSON.dump(this.getMsg(content, true)))
+		}
+
+		webhookRes(http) {
+			debug.print("[Webhook] " http.status ": " http.text)
+		}
+
 		getId(str) {
 			regex := regex(str, "(?<id>\d{9,})")
 			return regex.id
 		}
 
-		getMsg(content) {
+		getMsg(content, webhook := false) {
 			if IsObject(content) {
-				msg := content.get()
+				msg := content.get(webhook)
 			} else {
 				if StrLen(content) > 2000
 					Throw Exception("Message too long", -2)
@@ -227,6 +239,12 @@ class Discord {
 
 		sanitize(str) {
 			return StrReplace(str, "``", chr(8203) "``")
+		}
+
+		codeBlock(lang, code, sanitize := true) {
+			if (code = "")
+				return "No output"
+			return "``````" lang "`n" (sanitize ? this.sajnitize(code) : code) "``````"
 		}
 	}
 

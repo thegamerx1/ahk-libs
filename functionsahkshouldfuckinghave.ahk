@@ -218,3 +218,20 @@ Ping(Address, Timeout := 800) {
 
 	Return NumGet(Reply, 8, "UInt")
 }
+
+RandomString(length := 16) {
+	out := ""
+	loop % length
+		out .= Chr(random() ? random(0x61, 0x7A) : random(0x30, 0x39))
+	return out
+}
+
+TypeOf(what) {
+	if IsObject(what)
+		return "obj"
+	if regex(what, "\d+")
+		return "int"
+	if regex(what, "\w+")
+		return "str"
+	return "?"
+}
