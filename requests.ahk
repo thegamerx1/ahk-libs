@@ -31,7 +31,8 @@ class requests {
 
 		if this.async {
 			this.com.setTimeouts(this.timeout,this.timeout,this.timeout,this.timeout)
-			this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
+			if this.onFinished
+				this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
 		}
 		this.com.send(data)
 
