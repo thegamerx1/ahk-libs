@@ -260,9 +260,9 @@ class Discord {
 			return StrReplace(str, "``", chr(8203) "``")
 		}
 
-		codeBlock(lang, code, sanitize := true) {
+		codeBlock(lang, code, sanitize := true, emptymsg := "No output") {
 			if (code = "" || code = "`n")
-				return "No output"
+				return emptymsg
 			return "``````" lang "`n" (sanitize ? this.sanitize(code) : code) "``````"
 		}
 	}
