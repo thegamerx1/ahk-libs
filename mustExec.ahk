@@ -1,4 +1,4 @@
-#SingleInstance Force
+#SingleInstance force
 #Persistent
 #NoEnv
 #MaxThreadsPerHotkey 1
