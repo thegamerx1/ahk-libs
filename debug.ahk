@@ -73,13 +73,14 @@ class Debug {
 		start := SubStr(message, 1,1)
 		out := ""
 
-		if IsObject(message)
-			message := JSON.dump(message, 1, config.pretty)
-
 		if contains(start, actions) {
 			isAction := true
 			message := SubStr(message, 2)
 		}
+
+		if IsObject(message)
+			message := JSON.dump(message, 1, config.pretty)
+
 
 		if this.config.stamp
 			out .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec)

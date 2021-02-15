@@ -3,7 +3,10 @@
 class configLoader {
 	__New(file, default := "") {
 		this.file := file
-		this.default := IsObject(default) ? default : {}
+		if (!IsObject(default) && default)
+			throw Exception("Invalid default object", -1)
+
+		this.default := default
 		if !FileExist(this.file)
 			this.fixfile()
 
@@ -23,7 +26,8 @@ class configLoader {
 	}
 
 	loadfile() {
-		this.data := ObjectMerge(JSON.Load(fileopen(this.file, "r").read()), this.default)
+		data := JSON.Load(fileopen(this.file, "r").read())
+		this.data := this.default ? ObjectMerge(data, this.default) : data
 	}
 
 	save() {
