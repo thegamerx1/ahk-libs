@@ -28,7 +28,8 @@ class includer {
 	}
 
 	restart() {
-		Run % A_AhkPath " /restart """ A_ScriptFullPath """" Array2String(A_Args)
+		if !A_DebuggerName ;; Dont start outside of a debugger
+			Run % A_AhkPath " /restart """ A_ScriptFullPath """" Array2String(A_Args)
 		ExitApp 69
 	}
 }
