@@ -25,12 +25,7 @@ class Discord {
 		this.owner_guild := owner_guild
 		this.creator := parent
 		this.ratelimit := {}
-		try {
-			this.connect()
-		} catch e {
-			this.reconnect()
-		}
-		this.last_reconnect := 0
+		this.connect()
 	}
 
 	setResume(sessionid, seq) {
@@ -38,9 +33,13 @@ class Discord {
 	}
 
 	connect() {
-		data := this.CallAPI("GET", "gateway/bot")
-		debug.print("[DISCORD] " data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
-		this.ws := new WebSocket(this, data.url "?v=8&encoding=json")
+		try {
+			data := this.CallAPI("GET", "gateway/bot")
+			debug.print("[DISCORD] " data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
+			this.ws := new WebSocket(this, data.url "?v=8&encoding=json")
+		} catch {
+			return 1
+		}
 		this.last_reconnect := A_TickCount
 	}
 
@@ -51,8 +50,8 @@ class Discord {
 	}
 
 	reconnect(useResume := false) {
-		static TIMEOUT := 2*60*1000
-		debug.print("[Reconnect] #" this.reconnects " last reconnect: " niceDate(this.last_reconnect) " ago")
+		static TIMEOUT := 60*1000
+		debug.print("[Reconnect] total: " this.reconnects)
 		this.disconnect()
 		if (this.last_reconnect+TIMEOUT > A_TickCount)
 			Throw Exception("Wont reconnect")
@@ -60,23 +59,11 @@ class Discord {
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 
-		loop {
-			try {
-				if ping("1.1.1.1") {
-					if A_Index > 1
-						debug.print("[Reconnect] Got internet")
-					break
-				}
-			}
-			debug.print("[Reconnect] Waiting for an internet connection #" A_Index)
+		while !this.connect() {
+			debug.print("[Reconnect] Trying to reconnect #" A_Index)
 			sleep % 5*Min(A_Index, 120)*1000
 		}
 
-		try {
-			this.connect()
-		} catch e {
-			this.reconnect(true)
-		}
 		this.reconnects++
 	}
 
@@ -96,11 +83,11 @@ class Discord {
 		}
 
 		userGet(id) {
-			return this.user[id]
-		}
-
-		userSet(id, data) {
-			this.user[id] := data
+			for _, guild in this.guild {
+				if index := this.memberGet(guild.id, id)
+					return guild.members[index].user
+			}
+			Throw Exception("No user found with id " id, -2)
 		}
 
 		dmGet(id) {
@@ -123,6 +110,14 @@ class Discord {
 			this.guild[guild].channels[index] := data
 		}
 
+		channelDelete(guild, id) {
+			this.guildGet(guild).channels.RemoveAt(this.channelGet(guild, id))
+		}
+
+		channelSet(guild, data) {
+			this.guildGet(guild).channels.InsertAt(1, data)
+		}
+
 		memberGet(guild, id) {
 			for i, member in this.guildGet(guild).members
 				if (member.user.id = id)
@@ -130,25 +125,45 @@ class Discord {
 
 		}
 
+		memberDelete(guild, id) {
+			index := this.memberGet(guild, id)
+			this.guildGet(guild).members.RemoveAt(index)
+		}
+
 		memberUpdate(guild, id, member) {
 			index := this.memberGet(guild, id)
-			this.guildGet(guild).members[index] := member
+			newm := this.guildGet(guild).members[index] := member
+			newm.roles.push(guild)
 		}
 
 		memberSet(guild, member) {
-			this.guildGet(guild).members.InsertAt(1, member)
+			newm := this.guildGet(guild).members.InsertAt(1, member)
+			newm.roles.push(guild)
 		}
 
 		guildSet(guild, data) {
 			this.guild[guild] := data
+			for _, value in this.guild[guild].members {
+				index := this.memberGet(guild, value.user.id)
+				member := this.guild[guild].members[index]
+				for _, role in member.roles {
+					if role = guild
+						break
+				}
+				member.roles.push(guild)
+			}
 		}
 
 		guildUpdate(guild, data) {
-			this.guild[guild] := data.d
+			this.guild[guild] := ObjectMerge(data, this.guild[guild])
 		}
 
 		guildGet(id) {
 			return this.guild[id]
+		}
+
+		guildDelete(id) {
+			this.guild.Delete(id)
 		}
 
 		roleUpdate(guild, id, data) {
@@ -191,6 +206,10 @@ class Discord {
 				if (value.name = name)
 					return value
 			Throw Exception("Couldn't find emoji", -2, name)
+		}
+
+		emojiUpdate(guild, emojis) {
+			this.guildGet(guild).emojis := emojis
 		}
 	}
 
@@ -242,9 +261,9 @@ class Discord {
 		}
 
 		codeBlock(lang, code, sanitize := true) {
-			if (code = "")
+			if (code = "" || code = "`n")
 				return "No output"
-			return "``````" lang "`n" (sanitize ? this.sajnitize(code) : code) "``````"
+			return "``````" lang "`n" (sanitize ? this.sanitize(code) : code) "``````"
 		}
 	}
 
@@ -324,8 +343,9 @@ class Discord {
 	}
 
 	getUser(id) {
-		if !this.cache.userGet(id)
-			this.cache.userSet(id, this.CallAPI("GET", "users/" id))
+		; if !this.cache.userGet(id)
+			; this.cache.userSet(id, this.CallAPI("GET", "users/" id))
+			; Throw Exception("No user found with id " id, -2)
 		return this.cache.userGet(id)
 	}
 
@@ -469,30 +489,50 @@ class Discord {
 					return ;; ? Ignore own messages
 
 				Data.d := new this.message(this, Data.d)
-			case "READY":
-				this.session_id := Data.d.session_id
-				this.self := data.d.user
-				return
 			case "MESSAGE_REACTION_ADD":
 				if data.d.user_id == this.self.user_id
 					return
 				data.d := new this.reaction(this, data.d)
+
+			case "READY":
+				this.session_id := Data.d.session_id
+				this.self := data.d.user
+				return
+
 			case "GUILD_CREATE":
 				this.cache.guildSet(data.d.id, data.d)
 				if (data.d.id = this.owner_guild) {
 					TimeOnce(ObjBindMethod(this, "dispatch", "READY", data.d), 0)
 					debug.print("[DISCORD] READY")
 				}
-			case "GUILD_ROLE_UPDATE":
-				this.cache.roleUpdate(data.d.guild_id, data.d.role.id, data.d.role)
-			case "GUILD_ROLE_CREATE":
-				this.cache.roleCreate(data.d.guild_id, data.d.role)
 			case "GUILD_UPDATE":
 				this.cache.guildUpdate(data.d.guild_id, data.d)
+			case "GUILD_DELETE":
+				if !data.d.unavailable
+					this.cache.guildDelete(data.d.id)
+			case "GUILD_EMOJIS_UPDATE": ;;UNCHECKED
+				this.cache.emojiUpdate(data.d.guild_id, data.d.emojis)
+
+			case "GUILD_ROLE_CREATE":
+				this.cache.roleCreate(data.d.guild_id, data.d.role)
+			case "GUILD_ROLE_UPDATE":
+				this.cache.roleUpdate(data.d.guild_id, data.d.role.id, data.d.role)
 			case "GUILD_ROLE_DELETE":
 				this.cache.roleDelete(data.d.guild_id, data.d.role_id)
+
+			case "GUILD_MEMBER_UPDATE":
+				this.cache.memberUpdate(data.d.guild_id, data.d.user.id, data.d)
+			case "GUILD_MEMBER_REMOVE":
+				this.cache.memberDelete(data.d.guild_id, data.d.user.id)
+			case "GUILD_MEMBER_ADD":
+				this.cache.memberSet(data.d.guild_id, data.d.user)
+
 			case "CHANNEL_UPDATE":
 				this.cache.channelUpdate(data.d.guild_id, data.d.id, data.d)
+			case "CHANNEL_CREATE":
+				this.cache.channelSet(data.d.guild_id, data.d)
+			case "CHANNEL_DELETE":
+				this.cache.channelDelete(data.d.guild_id, data.d.id)
 		}
 
 		this.dispatch(data.t, data.d)
