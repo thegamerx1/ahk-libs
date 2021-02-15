@@ -177,3 +177,8 @@ TypeOf(what) {
 		return "str"
 	return "?"
 }
+
+reload(args) {
+	run % A_AhkPath "/restart " A_ScriptDir	" " args
+	ExitApp 0
+}
