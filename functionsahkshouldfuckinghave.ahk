@@ -183,10 +183,8 @@ reload(args := "") {
 	ExitApp
 }
 
-SingleInstance(title := "") {
-	title := title ? title : A_ScriptFullPath
-	if WinExist(title)
+SingleInstance() {
+	Process Exist
+	if (WinExist(A_ScriptFullPath) != WinExist("ahk_pid " DllCall("GetCurrentProcessId")))
 		WinKill
-
-	WinSetTitle %A_ScriptFullPath%,, %title%
 }
