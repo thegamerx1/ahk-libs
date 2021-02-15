@@ -31,8 +31,9 @@ class requests {
 
 		if this.async {
 			this.com.setTimeouts(this.timeout,this.timeout,this.timeout,this.timeout)
-			if this.onFinished
+			if IsObject(this.onFinished) {
 				this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
+			}
 		}
 		this.com.send(data)
 
@@ -46,7 +47,12 @@ class requests {
 		if (this.com.readyState != 4 || this.called)
 			return
 		this.called := true
-		this.onFinished.call(new requests_response(this))
+		try {
+			this.onFinished.call(new requests_response(this))
+		} catch e {
+			debug.print("[REQUEST] Error on a async thread")
+			debug.print(e)
+		}
 	}
 
 	encode(obj) {

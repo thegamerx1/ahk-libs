@@ -13,6 +13,7 @@ ListLines Off
 SendMode Input
 SetWorkingDir %A_ScriptDir%
 DetectHiddenWindows On
+global A_DebuggerName
 
 SetKeyDelay, 50, 50
 CoordMode Pixel, Screen

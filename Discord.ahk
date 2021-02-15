@@ -17,12 +17,14 @@ class Discord {
 					,11: "HeartbeatACK"}
 	reconnects := 0
 
-	__New(parent, token, intents, owner_guild) {
+	__New(parent, token, intents, owner_guild := "", owner_id := "") {
+		;; ? owner guild is required for checking when the bot has loaded the owner's guild so it can use those emotes at start
+		;; ? owner guild and owner id are used to add .isGuildOwner and .isBotOwner to the ctx
 		this.utils.init(this)
 		this.cache.init(this)
 		this.intents := intents
 		this.token := token
-		this.owner_guild := owner_guild
+		this.owner := {guild: owner_guild, id: owner_id}
 		this.creator := parent
 		this.ratelimit := {}
 		this.connect()
@@ -404,7 +406,7 @@ class Discord {
 
 	getEmoji(name, guild := "") {
 		if !guild
-			guild := this.owner_guild
+			guild := this.owner.guild
 		return this.cache.emojiGet(guild, name)
 	}
 
@@ -501,7 +503,7 @@ class Discord {
 
 			case "GUILD_CREATE":
 				this.cache.guildSet(data.d.id, data.d)
-				if (data.d.id = this.owner_guild) {
+				if (data.d.id = this.owner.guild) {
 					TimeOnce(ObjBindMethod(this, "dispatch", "READY", data.d), 0)
 					debug.print("[DISCORD] READY")
 				}
@@ -685,6 +687,15 @@ class Discord {
 			this.mention := "<@" data.id ">"
 			this.avatar := format(avatar, this.id, data.avatar)
 			this.permissions := []
+			this.isGuildOwner := (this.id = guild.owner)
+			this.isBotOwner := (this.id = api.owner.id)
+			if !guild {
+				try {
+					throw Exception("", -2)
+				} catch e {
+					debug.print(JSON.dump(e) " did not provide a guild")
+				}
+			}
 			if guild {
 				member := api.getMember(guild.id, this.id)
 				this.roles := member.roles
@@ -695,7 +706,7 @@ class Discord {
 					role := api.cache.guildGet(guild.id).roles[index]
 					perms |= role.permissions
 				}
-				if (this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) || this.id = this.guild.owner) {
+				if (this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) || this.isGuildOwner) {
 					for key, _ in this.permissionlist {
 						this.permissions.push(key)
 					}
@@ -812,6 +823,7 @@ class Discord {
 
 		reply(data) {
 			msg := this.api.SendMessage(this.channel.id, data)
+			msg.guild_id := this.guild.id
 			return new this.api.message(this.api, msg)
 		}
 

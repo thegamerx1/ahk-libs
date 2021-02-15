@@ -4,6 +4,7 @@ class HtmlFile {
 		html := ComObjCreate("HTMLfile")
 		html.write(compatibility data)
 		this.html := html
+		sleep -1
 	}
 
 	qs(sel) {
