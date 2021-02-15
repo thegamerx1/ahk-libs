@@ -182,3 +182,11 @@ reload(args := "") {
 	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
 	ExitApp
 }
+
+SingleInstance(title := "") {
+	title := title ? title : A_ScriptFullPath
+	if WinExist(title)
+		WinKill
+
+	WinSetTitle %A_ScriptFullPath%,, %title%
+}
