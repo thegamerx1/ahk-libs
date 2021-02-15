@@ -178,7 +178,7 @@ TypeOf(what) {
 	return "?"
 }
 
-reload(args) {
-	run % A_AhkPath "/restart " A_ScriptDir	" " args
+reload(args := "") {
+	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
 	ExitApp 0
 }
