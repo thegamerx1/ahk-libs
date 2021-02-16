@@ -61,7 +61,7 @@ class Discord {
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 
-		while !this.connect() {
+		while this.connect() {
 			debug.print("[Reconnect] Trying to reconnect #" A_Index)
 			sleep % 5*Min(A_Index, 120)*1000
 		}
