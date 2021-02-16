@@ -1,6 +1,7 @@
 Between(byref num, byref min, byref max) {
 	return (num > max || num < min)
 }
+
 Array2String(array, delimiter := " ") {
 	out := ""
 	for _, v in array
@@ -16,6 +17,22 @@ ObjectMerge(array1, array2) {
 
 	return array2
 }
+
+ObjectDeep(obj, limit := 100, loop := "") {
+	if !loop
+		loop := 0
+	for _, value in obj {
+		loop++
+		if IsObject(value)
+			loop := ObjectDeep(value, limit, loop)
+
+		if (loop > limit)
+			return limit
+	}
+	return loop
+}
+
+msgbox % ObJectDeep({test: true, asdasd: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: true}}}}}}}}}}}}}}}}}})
 
 GetFullPathName(path) {
 	cc := DllCall("GetFullPathName", "str", path, "uint", 0, "ptr", 0, "ptr", 0, "uint")
@@ -183,4 +200,48 @@ TypeOf(what) {
 reload(args := "") {
 	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
 	ExitApp
+}
+
+eval(str, context := "") {
+	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*)\)|)$"))
+		Throw Exception("Invalid query")
+
+	func := StrSplit(match.str, ".")
+	paramstr := match.params
+	isCall := StartsWith(paramstr,  "(")
+	paramstr := SubStr(paramstr, 2)
+	params := []
+	if (paramstr) {
+		while match := regex(paramstr, "^((?="")\""(?<arg>.+?)\""|(?<var>\w+)),?\s*") {
+			if match.arg {
+				params.push(match.arg)
+			} else {
+				params.push(match.var)
+			}
+			paramstr := StrReplace(paramstr, match.0,, 1)
+		}
+	}
+
+	; ? function call
+	if (func.length() = 1 && isCall)
+		return Func(func[1]).call(params*)
+
+	obj := func[1]
+	for _, value in context {
+		if (obj = value.name) {
+			obj := value.val
+			func.RemoveAt(1)
+			break
+		}
+	}
+
+	; ? query
+	if !isCall
+		return obj[func*]
+
+
+	; ? method call
+	funcn := func.pop()
+	obj := func.length() > 0 ? obj[func*] : obj
+	return ObjBindMethod(obj, funcn, params*).call()
 }
