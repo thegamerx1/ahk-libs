@@ -4,7 +4,7 @@ Between(byref num, byref min, byref max) {
 Array2String(array, delimiter := " ") {
 	out := ""
 	for _, v in array
-		out .= v delimiter
+		out .= (out ? delimiter : "") v
 	return out
 }
 
@@ -169,22 +169,18 @@ RandomString(length := 16) {
 TypeOf(what) {
 	if IsObject(what)
 		return "obj"
-	if (what = false || what = true)
+	if (what = 0 || what = 1)
 		return "bool"
 	if regex(what, "^\d+$")
 		return "int"
-	if regex(what, "^\w+$")
+	if regex(what, "^[a-z_]+$", "i")
 		return "str"
+	if regex(what, "^[a-z_0-9_]+$", "i")
+		return "strE"
 	return "?"
 }
 
 reload(args := "") {
 	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
 	ExitApp
-}
-
-SingleInstance() {
-	Process Exist
-	if (WinExist(A_ScriptFullPath) != WinExist("ahk_pid " DllCall("GetCurrentProcessId")))
-		WinKill
 }
