@@ -54,14 +54,15 @@ class Discord {
 	reconnect(useResume := false) {
 		static TIMEOUT := 60*1000
 		debug.print("[Reconnect] total: " this.reconnects)
-		this.disconnect()
 		if (this.last_reconnect+TIMEOUT > A_TickCount)
 			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
 
+		this.disconnect()
 		while this.connect() {
+			this.disconnect()
 			debug.print("[Reconnect] Trying to reconnect #" A_Index)
 			sleep % 5*Min(A_Index, 120)*1000
 		}
