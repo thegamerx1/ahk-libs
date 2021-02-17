@@ -616,6 +616,10 @@ class Discord {
 			}
 			this.pages.push(temp)
 		}
+
+		get() {
+			return this.pages
+		}
 	}
 
 	class embed {
