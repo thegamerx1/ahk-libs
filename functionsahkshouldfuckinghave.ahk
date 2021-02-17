@@ -186,7 +186,7 @@ RandomString(length := 16) {
 TypeOf(what) {
 	if IsObject(what)
 		return "obj"
-	if (what = 0 || what = 1)
+	if (bool(what) != "")
 		return "bool"
 	if regex(what, "^\d+$")
 		return "int"
@@ -202,6 +202,20 @@ reload(args := "") {
 	ExitApp
 }
 
+Bool(bool) {
+	static truthy := ["1", "on", "true"]
+	static falsy := ["0", "off", "false"]
+	for _, value in truthy {
+		if (bool = value)
+			return true
+	}
+	for _, value in falsy {
+		if (bool = value)
+			return false
+	}
+	return ""
+}
+
 eval(str, context := "") {
 	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*)\)|)$"))
 		Throw Exception("Invalid query")
@@ -212,7 +226,7 @@ eval(str, context := "") {
 	paramstr := SubStr(paramstr, 2)
 	params := []
 	if (paramstr) {
-		while match := regex(paramstr, "^((?="")\""(?<arg>.+?)\""|(?<var>\w+)),?\s*") {
+		while match := regex(paramstr, "^((?="")\""(?<arg>[\w_\.]+)\""|(?<var>(?&arg)),?\s*)") {
 			if match.arg {
 				params.push(match.arg)
 			} else {
@@ -235,6 +249,11 @@ eval(str, context := "") {
 		}
 	}
 
+	; ? global class
+	if !IsObject(obj)
+		obj := %obj%
+
+
 	; ? query
 	if !isCall
 		return obj[func*]
@@ -242,6 +261,7 @@ eval(str, context := "") {
 
 	; ? method call
 	funcn := func.pop()
-	obj := func.length() > 0 ? obj[func*] : obj
-	return ObjBindMethod(obj, funcn, params*).call()
+	if !IsObject(obj)
+		obj := func.length() > 0 ? obj[func*] : obj
+	return ObjBindMethod(obj, funcn).call(params*)
 }
