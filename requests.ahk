@@ -66,6 +66,7 @@ class requests {
 
 class requests_response {
 	__New(request) {
+		this.request := request
 		com := request.com
 		this.status := com.status
 		this.statusText := com.statusText

@@ -185,26 +185,25 @@ class EzGui {
 	}
 
 	ControlGet(byref name) {
-		local control := this.controls[name]
+		control := this.controls[name]
 		if !control
 			Throw Exception("No control found: " name, -1)
 		return control
 	}
 
 	setControl(byref name, byref value) {
-		local control := this.GetControl(name)
+		control := this.ControlGet(name)
 		GuiControl,, %control%, %value%
 	}
 
 	getControl(byref name) {
-		local value
-		local control := this.ControlGet(name)
+		control := this.ControlGet(name)
 		GuiControlGet value,, %control%
 		return value
 	}
 
 	optionControl(byref name, byref option) {
-		local control := this.ControlGet(name)
+		control := this.ControlGet(name)
 		GuiControl %option% +Redraw, %control%
 	}
 

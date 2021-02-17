@@ -1,5 +1,6 @@
 ;; ? Modified from https://github.com/G33kDude/Discord.ahk
 #include <WebSocket>
+#include <Counter>
 #include <requests>
 
 class Discord {
@@ -42,7 +43,7 @@ class Discord {
 		} catch {
 			return 1
 		}
-		this.last_reconnect := A_TickCount
+		this.last_reconnect := new Counter(, true)
 	}
 
 	disconnect() {
@@ -53,8 +54,9 @@ class Discord {
 
 	reconnect(useResume := false) {
 		static TIMEOUT := 60*1000
-		debug.print("[Reconnect] total: " this.reconnects)
-		if (this.last_reconnect+TIMEOUT > A_TickCount)
+		static reconnec := "[Reconnect] Last reconnect: {} ago #{}"
+		debug.print(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
+		if (this.last_reconnect.get() < TIMEOUT)
 			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
@@ -64,7 +66,7 @@ class Discord {
 		while this.connect() {
 			this.disconnect()
 			debug.print("[Reconnect] Trying to reconnect #" A_Index)
-			sleep % 5*Min(A_Index, 120)*1000
+			DllCall("sleep", "int", 5*Min(A_Index, 120)*1000)
 		}
 
 		this.reconnects++
@@ -221,7 +223,7 @@ class Discord {
 			this.api := parent
 		}
 
-		sendWebhook(content, webhook) {
+		webhook(content, webhook) {
 			http := new requests("POST", webhook,, true)
 			http.headers["Content-Type"] := "application/json"
 			http.onFinished := ObjBindMethod(this, "webhookRes")
@@ -229,7 +231,8 @@ class Discord {
 		}
 
 		webhookRes(http) {
-			debug.print("[Webhook] " http.status ": " http.text)
+			if (http.status != 204 && http.status != 200)
+				debug.print("[Webhook] Error " http.status ": " http.text)
 		}
 
 		getId(str) {
@@ -254,6 +257,8 @@ class Discord {
 		}
 
 		getEmoji(name, wrap := true) {
+			if !RegExMatch(name, "^[\w#@$\?\[\]\x80-\xFF]+$")
+				return name
 			emoji := this.api.getEmoji(name)
 			wraps := (wrap ? ["<" (emoji.animated ? "a" : "") ":", ">"] : [])
 			return wraps[1] name ":" emoji.id wraps[2]
@@ -261,6 +266,18 @@ class Discord {
 
 		sanitize(str) {
 			return StrReplace(str, "``", chr(8203) "``")
+		}
+
+		getCodeBlock(code) {
+			static regex := "^(``{1,2}(?!``)(?<code>.*?))``{1,2}|``{3}(?(?=\w+\n)(?<lang>\w+)\n)(?<code>.*?)``{3}$"
+			out := {}
+			if !(match := regex(code, regex, "Js")) {
+				out.code := code
+			} else {
+				out.code := match.code
+				out.lang := match.lang
+			}
+			return out
 		}
 
 		codeBlock(lang, code, sanitize := true, emptymsg := "No output") {
@@ -339,7 +356,7 @@ class Discord {
 		return this.CallAPI("GET", "channels/" channel "/messages?" requests.encode(opt))
 	}
 
-	GetMessage(channel, id) {
+	GetMessage(channel, id) { ;; TODO: Doesnt return guild fix?
 		if !this.cache.messageGet(channel, id)
 			this.cache.messageSet(channel, this.CallAPI("GET", "channels/" channel "/messages/" id))
 		return new discord.message(this, this.cache.messageGet(channel, id))
@@ -692,9 +709,9 @@ class Discord {
 			this.isBotOwner := (this.id = api.owner.id)
 			if !guild {
 				try {
-					throw Exception("", -2)
+					throw Exception("", -3)
 				} catch e {
-					debug.print(JSON.dump(e) " did not provide a guild")
+					debug.print(e.what " did not provide a guild")
 				}
 			}
 			if guild {

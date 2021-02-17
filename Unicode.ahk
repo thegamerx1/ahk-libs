@@ -1,6 +1,8 @@
 #include <functionsahkshouldfuckinghave>
 class Unicode {
 	init() {
+		if IsObject(this.emotes)
+			return
 		p1 := {"#":"0023 FE0F 20E3","0":"0030 FE0F 20E3","1":"0031 FE0F 20E3",1st_place_medal:"1F947",2:"0032 FE0F 20E3",2nd_place_medal:"1F948",3:"0033 FE0F 20E3",3rd_place_medal:"1F949",4:"0034 FE0F 20E3",5:"0035 FE0F 20E3",6:"0036 FE0F 20E3",7:"0037 FE0F 20E3",8:"0038 FE0F 20E3",8ball:"1f3b1",9:"0039 FE0F 20E3",a:"1f170",A_button_blood_type:"1F170",ab:"1f18e",abacus:"1F9EE",abc:"1f524",abcd:"1f521",accept:"1f251",adhesive_bandage:"1FA79",admission_tickets:"1F39F FE0F",aerial_tramway:"1f6a1",airplane:2708,airplane_arriving:"1f6ec",airplane_departure:"1f6eb",alarm_clock:"23f0",alembic:"2697 FE0F",alien:"1f47d",ambulance:"1f691",amphora:"1f3fa",anchor:2693,angel:"1f47c",anger:"1f4a2",anger_right:"1f5ef",angry:"1f620",anguished:"1f627",ant:"1f41c",apple:"1f34e",aquarius:2652,aries:2648,arrow_backward:"25c0",arrow_double_down:"23ec",arrow_double_up:"23eb",arrow_down:"2b07",arrow_down_small:"1f53d",arrow_forward:"25b6",arrow_heading_down:2935,arrow_heading_up:2934,arrow_left:"2b05",arrow_lower_left:2199,arrow_lower_right:2198,arrow_right:"27a1",arrow_right_hook:"21aa",arrow_up:"2b06",arrow_up_down:2195,arrow_up_small:"1f53c",arrow_upper_left:2196,arrow_upper_right:2197,arrows_clockwise:"1f503",arrows_counterclockwise:"1f504",articulated_lorry:"1f69b",artist:"1F9D1 200D 1F3A8",artist_palette:"1F3A8",asterisk:"002a 20e3",astonished:"1f632",astronaut:"1F9D1 200D 1F680",athletic_shoe:"1f45f",atm:"1f3e7",atom:"269b",atom_symbol:"269B FE0F",auto_rickshaw:"1F6FA",automobile:"1F697",avocado:"1F951",axe:"1FA93",b:"1f171",B_button_blood_type:"1F171",baby:"1f476",baby_bottle:"1f37c",baby_chick:"1f424",baby_symbol:"1f6bc",back:"1f519",bacon:"1F953",badger:"1F9A1",badminton:"1F3F8",bagel:"1F96F",baggage_claim:"1f6c4",baguette_bread:"1F956",balance_scale:"2696 FE0F",bald:"1F9B2",ballet_shoes:"1FA70",balloon:"1f388",ballot_box:"1f5f3",ballot_box_with_ballot:"1F5F3 FE0F",ballot_box_with_check:2611,bamboo:"1f38d"}
 		p2 := {banana:"1f34c",bangbang:"203c",banjo:"1FA95",bank:"1f3e6",bar_chart:"1f4ca",barber:"1f488",baseball:"26BE",basket:"1F9FA",basketball:"1f3c0",basketballer:"26F9",basketballer_lt:"26F9 1F3FB",basketballer_woman_dt:":basketballer:",basketballer_woman_lt:":basketballer:",basketballer_woman_mdt:":basketballer:",basketballer_woman_mlt:":basketballer:",basketballer_woman_mt:":basketballer:",bat:"1F987",bath:"1f6c0",bathtub:"1f6c1",battery:"1f50b",beach_umbrella:"26f1",beach_with_umbrella:"1F3D6 FE0F",bear:"1f43b",beard:"1F9D4",bed:"1F6CF FE0F",bee:"1f41d",beer:"1f37a",beers:"1f37b",beetle:"1f41e",beginner:"1f530",bell:"1f514",bellhop_bell:"1F6CE FE0F",bento:"1f371",beverage_box:"1F9C3",bicyclist:"1f6b4",bike:"1f6b2",bikini:"1f459",billed_cap:"1F9E2",biohazard:"2623 FE0F",bird:"1f426",birthday:"1f382",black_circle:"26ab",black_heart:"1f5a4",black_joker:"1f0cf",black_large_square:"2b1b",black_medium_small_square:"25fe",black_medium_square:"25fc",black_nib:"2712 FE0F",black_small_square:"25AA",black_square_button:"1f532",blond_hair:"1F471 200D 2642",blossom:"1f33c",blowfish:"1f421",blue_book:"1f4d8",blue_car:"1f699",blue_circle:"1f535",blue_heart:"1f499",blue_square:"1F7E6",blush:"1f60a",boar:"1f417",bomb:"1f4a3",bone:"1F9B4",book:"1f4d6",bookmark:"1f516",bookmark_tabs:"1f4d1",books:"1f4da",boom:"1f4a5",boot:"1f462",bouquet:"1f490",bow:"1f647",bow_and_arrow:"1f3f9",bowl_with_spoon:"1F963",bowling:"1f3b3",boxing_glove:"1F94A",boy:"1f466",brain:"1F9E0",bread:"1f35e",breastfeeding:"1F931",brick:"1F9F1",bride_with_veil:"1f470",bridge_at_night:"1f309",briefcase:"1f4bc",briefs:"1FA72",broccoli:"1F966",broken_heart:"1f494",broom:"1F9F9",brown_circle:"1F7E4",brown_heart:"1F90E",bug:"1f41b",building_construction:"1F3D7 FE0F",bulb:"1f4a1",bullettrain_front:"1f685",bullettrain_side:"1f684",burrito:"1f32f",bus:"1f68c",busstop:"1f68f",bust_in_silhouette:"1F464",busts_in_silhouette:"1f465",butter:"1F9C8",butterfly:"1F98B",cactus:"1f335",cake:"1f370",calendar:"1f4c6",call_me_hand:"1F919"}
 		p3 := {calling:"1f4f2",camel:"1f42b",camera:"1f4f7",camera_with_flash:"1f4f8",camping:"1F3D5 FE0F",cancer:"264b",candle:"1F56F FE0F",candy:"1f36c",canned_food:"1F96B",canoe:"1F6F6",capital_abcd:"1f520",capricorn:2651,card_file_box:"1F5C3 FE0F",card_index:"1f4c7",card_index_dividers:"1F5C2 FE0F",carousel_horse:"1f3a0",carrot:"1F955",cat2:"1f408",cat:"1f431",cd:"1f4bf",chains:"26D3 FE0F",chair:"1FA91",champagne:"1f37e",chart:"1f4b9",chart_with_downwards_trend:"1f4c9",chart_with_upwards_trend:"1f4c8",check_box_with_check:2611,check_mark:2714,checkered_flag:"1f3c1",cheese_wedge:"1F9C0",cherries:"1f352",cherry_blossom:"1f338",chess_pawn:"265F",chestnut:"1F330",chicken:"1f414",child:"1F9D2",children_crossing:"1f6b8",chipmunk:"1F43F FE0F",chocolate_bar:"1f36b",chopsticks:"1F962",christmas_tree:"1f384",church:"26ea",cinema:"1f3a6",circled_M:"24C2",circus_tent:"1f3aa",city_sunset:"1f307",cityscape:"1F3D9 FE0F",cityscape_at_dusk:"1F306",cl:"1f191",clamp:"1F5DC FE0F",clap:"1f44f",clapper:"1f3ac",classical_building:"1F3DB FE0F",clinking_glasses:"1F942",clipboard:"1f4cb",clock1030:"1f565",clock10:"1f559",clock1130:"1f566",clock11:"1f55a",clock1230:"1f567",clock12:"1f55b",clock130:"1f55c",clock1:"1f550",clock230:"1f55d",clock2:"1f551",clock330:"1f55e",clock3:"1f552",clock430:"1f55f",clock4:"1f553",clock530:"1f560",clock5:"1f554",clock630:"1f561",clock6:"1f555",clock730:"1f562",clock7:"1f556",clock830:"1f563",clock8:"1f557",clock930:"1f564",clock9:"1f558",closed_book:"1f4d5",closed_lock_with_key:"1f510",closed_umbrella:"1f302",cloud:"2601 FE0F",cloud_with_lightning:"1F329 FE0F",cloud_with_lightning_and_rain:"26C8 FE0F",cloud_with_rain:"1F327 FE0F",cloud_with_snow:"1F328 FE0F",clown_face:"1F921",club_suit:"2663 FE0F",clubs:2663,cn:"1F1E8 1F1F3",coat:"1F9E5",cocktail:"1f378",coconut:"1F965",coffee:2615,coffin:"26B0 FE0F",cold_face:"1F976",cold_sweat:"1f630",comet:"2604 FE0F",compass:"1F9ED",compression:"1f5dc",computer:"1f4bb",computer_mouse:"1F5B1 FE0F",confetti_ball:"1f38a"}
@@ -29,8 +31,7 @@ class Unicode {
 	}
 
 	get(name) {
-		if !IsObject(this.emotes)
-			this.init()
+		this.init()
 
 		if !this.emotes[name]
 			Throw Exception("Emote not found", -1, name)
@@ -44,5 +45,25 @@ class Unicode {
 			out .= Chr("0x" value)
 		}
 		return out
+	}
+
+	search(name, threshold := 0.4, mode := "obj") {
+		this.init()
+		out := {}
+		for key, value in this.emotes {
+			if (StrDiff(name, key) > threshold) {
+				out.push({name: key, emoji: this.parse(value)})
+			}
+		}
+		switch mode {
+			case "obj":
+				return out
+			case "raw":
+				raw := ""
+				for key, value in out {
+					raw .= value.name ": " value.emoji "`n"
+				}
+				return raw
+		}
 	}
 }

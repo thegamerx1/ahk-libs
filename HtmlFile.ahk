@@ -1,10 +1,9 @@
 class HtmlFile {
 	__New(data) {
-		static compatibility := "<meta http-equiv=""X-UA-Compatible"" content=""IE=edge"">"
+		static compatibility := "<meta http-equiv=""X-UA-Compatible"" content=""IE=9"">"
 		html := ComObjCreate("HTMLfile")
 		html.write(compatibility data)
 		this.html := html
-		sleep -1
 	}
 
 	qs(sel) {
