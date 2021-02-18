@@ -252,8 +252,8 @@ class Discord {
 		}
 
 		ISODATE(str) {
-			match := regex(str, "(?<YYYY>\d{4})-?(?<MM>\d{2})-?(?<DD>\d{2})T?(?<HH>\d{2}):?(?<MI>\d{2}):?(?<SS>\d{2}(?<SD>.\d+)?)\+?(?<TZ>\d{2}:\d{2})?")
-			return match.YYYY match.MM  match.DD  match.HH  match.MI  match.SS ;  match.SD
+			match := regex(str, "(?<YYYY>\d{4})-?(?<MM>\d{2})-?(?<DD>\d{2})T?(?<HH>\d{2}):?(?<MI>\d{2}):?(?<SS>\d{2})\.(?<SD>\d+)\+\d{2}:\d{2}")
+			return match.YYYY match.MM  match.DD  match.HH  match.MI  match.SS "."  match.SD
 		}
 
 		getEmoji(name, wrap := true) {
@@ -825,6 +825,7 @@ class Discord {
 				this.guild := new discord.guild(api, data.guild_id)
 			}
 			this.channel := new discord.channel(api, data.channel_id, this.guild)
+			this.timestamp := discord.utils.ISODATE(data.timestamp)
 			if !data.webhook_id {
 				this.self := new discord.author(api, api.self, this.guild, this.channel)
 				this.author := new discord.author(api, data.author, this.guild, this.channel)

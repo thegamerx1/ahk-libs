@@ -1,11 +1,13 @@
 #include <OrderArray>
+#include <EzConf>
 class dataframe {
-	__New(data, spacing = 2) {
+	__New(data, spacing = 2, options := "") {
 		this.spacing := spacing
 		this.columns := []
 		for _, col in data {
 			this.columns.push(new dataframe.column(col.content, col.name))
 		}
+		this.options := EzConf(options, {header: true})
 	}
 
 	convertToData(obj) {
@@ -51,8 +53,10 @@ class dataframe {
 	get() {
 		lines := this.prepareLines()
 		for _, col in this.columns {
-			lines[1] .= col.name strMultiply(" ", col.width-StrLen(col.name)+this.spacing)
-			lines[2] .= strMultiply("-", col.width+this.spacing/2) strMultiply(" ", this.spacing/2)
+			if this.options.header {
+				lines[1] .= col.name strMultiply(" ", col.width-StrLen(col.name)+this.spacing)
+				lines[2] .= strMultiply("-", col.width+this.spacing/2) strMultiply(" ", this.spacing/2)
+			}
 			for _, row in col.rows {
 				lines[A_Index+2] .= row strMultiply(" ", col.width-StrLen(row)+this.spacing)
 			}
