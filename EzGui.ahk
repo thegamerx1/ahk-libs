@@ -21,7 +21,11 @@ class EzGui {
 		this.config := ezConf(config, defaultconf)
 		this.creator := creator
 		this.parentname := creator.__Class
-		this.initGui()
+		try {
+			this.initGui()
+		} catch e {
+			this.fatalError(e.message)
+		}
 		this.resetFont()
 	}
 
@@ -102,7 +106,7 @@ class EzGui {
 					try
 						if this.wnd.inject.done
 							break
-					if (tries > 50*100) ; 5s
+					if (tries > 50*100)
 						this.fatalError("Waiting timed out (inject)")
 
 					Sleep 50
