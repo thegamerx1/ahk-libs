@@ -32,8 +32,6 @@ ObjectDeep(obj, limit := 100, loop := "") {
 	return loop
 }
 
-msgbox % ObJectDeep({test: true, asdasd: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: {asda: true}}}}}}}}}}}}}}}}}})
-
 GetFullPathName(path) {
 	cc := DllCall("GetFullPathName", "str", path, "uint", 0, "ptr", 0, "ptr", 0, "uint")
 	VarSetCapacity(buf, cc*(A_IsUnicode?2:1))
