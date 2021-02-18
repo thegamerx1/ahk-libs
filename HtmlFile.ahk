@@ -1,16 +1,16 @@
 class HtmlFile {
-	__New(data) {
+	__New(byref data) {
 		static compatibility := "<meta http-equiv=""X-UA-Compatible"" content=""IE=9"">"
 		html := ComObjCreate("HTMLfile")
 		html.write(compatibility data)
 		this.html := html
 	}
 
-	qs(sel) {
+	qs(byref sel) {
 		return this.html.querySelector(sel)
 	}
 
-	qsa(sel) {
+	qsa(byref sel) {
 		return this.html.querySelectorAll(sel)
 	}
 
@@ -18,6 +18,7 @@ class HtmlFile {
 		return new this.Enumerable(collection)
 	}
 
+	; ? Stolen from https://github.com/G33kDude/Neutron.ahk
 	class Enumerable {
 		i := 0
 		__New(collection) {
