@@ -1,5 +1,5 @@
 #Include <ezConf>
-#Include <json>
+#Include <JSON>
 class Debug {
 	init(options := "") {
 		static defaultconf := {stamp: false, stampformat: "[{:02}:{:02}:{:02}] "}
@@ -121,12 +121,12 @@ class Debug {
 	}
 
 	std(byref message) {
-		if this.errorStdOut
-			return
-		try {
-			FileAppend %message%, *
-		} catch e {
-			this.errorStdOut := true
+		if !this.errorStdOut {
+			try {
+				FileAppend %message%, *
+			} catch e {
+				this.errorStdOut := true
+			}
 		}
 	}
 }
