@@ -60,8 +60,8 @@ getPath(pathwithFile) {
 	return RegExReplace(pathwithFile, "m)\w+\.\w+$")
 }
 
-regex(string, regex, flags := "") {
-	RegExMatch(string, "`aO" flags ")" regex, match)
+regex(byref string, byref regex, flags := "") {
+	RegExMatch(string, "`a`nO" flags ")" regex, match)
 	return match
 }
 
@@ -115,7 +115,7 @@ strDiff(str,str2) {
 	return vSDC
 }
 
-strDiffBest(array, to) {
+strDiffBest(byref to, byref array) {
 	best := ""
 	for _, value in array {
 		percent := strDiff(value, to)
@@ -133,7 +133,7 @@ strMultiply(byref str, times) {
 	return out
 }
 
-ClipBoardPaste(text) {
+ClipBoardPaste(byref text) {
 	oldclipboard := clipboard
 	clipboard := ""
 	clipboard := text
@@ -262,4 +262,9 @@ eval(str, context := "") {
 	if !IsObject(obj)
 		obj := func.length() > 0 ? obj[func*] : obj
 	return ObjBindMethod(obj, funcn).call(params*)
+}
+
+FileRead(file) {
+	FileRead out, %file%
+	return out
 }

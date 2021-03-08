@@ -1,3 +1,4 @@
+;; ? https://github.com/G33kDude/Socket.ahk/blob/master/Socket.ahk
 class Socket
 {
 	static WM_SOCKET := 0x9987, MSG_PEEK := 2
@@ -131,7 +132,7 @@ class Socket
 	Recv(ByRef Buffer, BufSize:=0, Flags:=0)
 	{
 		while (!(Length := this.MsgSize()) && this.Blocking)
-			Sleep this.BlockSleep
+			Sleep, this.BlockSleep
 		if !Length
 			return 0
 		if !BufSize
@@ -155,7 +156,7 @@ class Socket
 		{
 			if !this.Blocking
 				return ""
-			Sleep this.BlockSleep
+			Sleep, this.BlockSleep
 		}
 		if KeepEnd
 			return this.RecvText(i, Flags, Encoding)

@@ -142,6 +142,9 @@ class Discord {
 		}
 
 		memberSet(guild, member) {
+			if (index := this.memberGet(guild, member.user.id))
+				return this.memberUpdate(guild, member.user.id, member)
+
 			newm := this.guildGet(guild).members.InsertAt(1, member)
 			newm.roles.push(guild)
 		}
@@ -322,7 +325,7 @@ class Discord {
 		}
 
 		; * Request was unsuccessful
-		if (httpout.status != 200 && httpout.status != 204) {
+		if !StartsWith(httpout.status, 20) {
 			debug.print("Request failed: " httpout.text)
 			throw Exception(httpjson.message, -2, httpjson.code)
 		}
@@ -332,6 +335,14 @@ class Discord {
 	; ? Sends data through the websocket
 	Send(Data) {
 		this.ws.send(JSON.dump(Data))
+	}
+
+	registerSlash(name, desc, args := "", guild := "") {
+		command := {name: name, description: desc}
+		path := "applications/" this.self.application.id (guild ? "/guilds/" guild : "") "/commands"
+		if IsObject(args)
+			command.options := args
+		return this.CallAPI("POST", path, command)
 	}
 
 	SetPresence(status, playing := "", type := 0) {
@@ -517,12 +528,14 @@ class Discord {
 			case "READY":
 				this.session_id := Data.d.session_id
 				this.self := data.d.user
-				return
+				this.self.application := data.d.application
+				if (this.owner.guild)
+					return
 
 			case "GUILD_CREATE":
 				this.cache.guildSet(data.d.id, data.d)
 				if (data.d.id = this.owner.guild) {
-					TimeOnce(ObjBindMethod(this, "dispatch", "READY", data.d), 0)
+					TimeOnce(ObjBindMethod(this, "dispatch", "READY", {}), 0)
 					debug.print("[DISCORD] READY")
 				}
 			case "GUILD_UPDATE":
@@ -532,6 +545,9 @@ class Discord {
 					this.cache.guildDelete(data.d.id)
 			case "GUILD_EMOJIS_UPDATE": ;;UNCHECKED
 				this.cache.emojiUpdate(data.d.guild_id, data.d.emojis)
+
+			case "INTERACTION_CREATE":
+				data.d := new this.interaction(this, data.d)
 
 			case "GUILD_ROLE_CREATE":
 				this.cache.roleCreate(data.d.guild_id, data.d.role)
@@ -815,9 +831,33 @@ class Discord {
 		}
 	}
 
+	class interaction {
+		__New(api, data) {
+			this.api := api
+			this.guild := new discord.guild(api, data.guild_id)
+			this.channel := new discord.channel(api, data.channel_id, data.guild)
+			api.cache.memberSet(data.guild_id, data.member)
+			this.author := new discord.author(api, data.member.user, this.guild, this.channel)
+			this.token := data.token
+			this.id := data.id
+			this.data := data.data
+			this.isInteraction := true
+		}
+
+		reply(type, message := "") {
+			if (!message && StrLen(type) != 1) {
+				response := {type: 4, data: discord.utils.getMsg(type)}
+			} else {
+				response := {type: type}
+				if message
+					response.data := discord.utils.getMsg(message)
+			}
+			data := this.api.callAPI("POST", "interactions/"  this.id "/" this.token "/callback", response)
+		}
+	}
+
 	class message {
 		__New(api, data) {
-			this.data := data
 			this.id := data.id
 			this.api := api
 			this.message := data.content

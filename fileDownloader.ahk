@@ -4,8 +4,13 @@
 #include <timer>
 
 class fileDownloader {
-	__New(url, saveTo, progressFunc) {
+	__New(url, saveTo, progressFunc, rate := 250) {
 		this.url := url
+		if (saveTo == "") {
+			saveTo := StrSplit(url, ["/", "\"]).pop()
+			if (saveTo == "")
+				throw Exception("Invalid name", -1)
+		}
 		this.saveTo := saveTo
 		this.progressFunc := progressFunc
 		http := new requests("HEAD", url)
@@ -14,10 +19,10 @@ class fileDownloader {
 
 		this.LastSizeTick := 0
 		this.LastSize := 0
-		progressFunc.call(-1, this.FinalSize/(1024*2) "MB")
-		this.timer := new timer(ObjBindMethod(this, "check"), 250)
+		progressFunc.call(-1, Floor(this.FinalSize/1024/1024) "MB")
+		this.timer := new timer(ObjBindMethod(this, "check"), rate)
 		UrlDownloadToFile %url%, %saveTo%
-		progressFunc.call(101)
+		progressFunc.call(100, "Done")
 		this.timer.delete()
 	}
 
@@ -32,7 +37,7 @@ class fileDownloader {
             Speed := Round(Speed/1024, 2)
         }
 		if !speed {
-			speed = "Unkown"
+			speed = Unkown
 		}
 
 
