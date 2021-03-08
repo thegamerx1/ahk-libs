@@ -45,7 +45,6 @@ class requests {
 	}
 
 	readyState() {
-		debug.print(this.com.readyState)
 		if (this.com.readyState != 4 || this.called)
 			return
 		this.called := true
