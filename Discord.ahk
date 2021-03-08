@@ -337,14 +337,6 @@ class Discord {
 		this.ws.send(JSON.dump(Data))
 	}
 
-	registerSlash(name, desc, args := "", guild := "") {
-		command := {name: name, description: desc}
-		path := "applications/" this.self.application.id (guild ? "/guilds/" guild : "") "/commands"
-		if IsObject(args)
-			command.options := args
-		return this.CallAPI("POST", path, command)
-	}
-
 	SetPresence(status, playing := "", type := 0) {
 		activity := []
 		if playing
