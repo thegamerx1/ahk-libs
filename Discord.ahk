@@ -883,11 +883,11 @@ class Discord {
 		}
 
 		edit(data) {
-			this.api.EditMessage(this.channel.id, this.data.id, data)
+			this.api.EditMessage(this.channel.id, this.id, data)
 		}
 
 		delete() {
-			this.api.DeleteMessage(this.channel.id, this.data.id)
+			this.api.DeleteMessage(this.channel.id, this.id)
 		}
 
 		getEmoji(name) {
