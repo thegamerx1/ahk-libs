@@ -16,7 +16,7 @@ class requests {
  	}
 
 	send(data := "") {
-		this.com := ComObjCreate(this.async ? "MSXML2.ServerXMLHTTP" : "WinHttp.WinHttpRequest.5.1")
+		this.com := ComObjCreate(this.async ? "Msxml2.ServerXMLHTTP.6.0" : "WinHttp.WinHttpRequest.5.1")
 		try {
 			this.com.open(this.type, this.url, true)
 		} catch e {
@@ -30,7 +30,8 @@ class requests {
 			this.com.SetRequestHeader(name, value)
 
 		if this.async {
-			this.com.setTimeouts(this.timeout,this.timeout,this.timeout,this.timeout)
+			timeout := this.timeout*1000
+			this.com.setTimeouts(timeout,timeout,timeout,timeout)
 			if IsObject(this.onFinished) {
 				this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
 			}
@@ -44,6 +45,7 @@ class requests {
 	}
 
 	readyState() {
+		debug.print(this.com.readyState)
 		if (this.com.readyState != 4 || this.called)
 			return
 		this.called := true
