@@ -87,6 +87,15 @@ class Discord {
 			this.api := parent
 		}
 
+		findChannelGuild(id) {
+			for _, guild in this.guild {
+				for _, channel in guild.channels {
+					if (channel.id = id)
+						return guild.id
+				}
+			}
+		}
+
 		userGet(id) {
 			for _, guild in this.guild {
 				if index := this.memberGet(guild.id, id)
@@ -206,7 +215,9 @@ class Discord {
 		}
 
 		messageGet(channel, id) {
-			return this.msg[channel][id]
+			msg := this.msg[channel][id]
+			msg.guild_id := this.findChannelGuild(channel)
+			return msg
 		}
 
 		emojiGet(guild, name) {
@@ -359,9 +370,10 @@ class Discord {
 		return this.CallAPI("GET", "channels/" channel "/messages?" requests.encode(opt))
 	}
 
-	GetMessage(channel, id) { ;; TODO: Doesnt return guild fix?
+	GetMessage(channel, id) {s
 		if !this.cache.messageGet(channel, id)
 			this.cache.messageSet(channel, this.CallAPI("GET", "channels/" channel "/messages/" id))
+
 		return new discord.message(this, this.cache.messageGet(channel, id))
 	}
 
