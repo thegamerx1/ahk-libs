@@ -172,7 +172,7 @@ Unix2Miss(time) {
 }
 
 StartsWith(str, start) {
-	return SubStr(str, 1, StrLen(start)) == start
+	return SubStr(str, 1, StrLen(start)) = start
 }
 
 ;https://autohotkey.com/board/topic/80587-how-to-find-internet-connection-status/
