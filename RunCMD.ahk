@@ -40,7 +40,6 @@ RunCMD(CmdLine, Fn:="", stopFunc := "",  WorkingDir:="", Codepage:="CP0") {
 			sleep 100
 	}
 
-
 	Fn.Call(Line, 1)
 	hProcess := NumGet(PI, 0)
 	hThread  := NumGet(PI, A_PtrSize)

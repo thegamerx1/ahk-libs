@@ -516,6 +516,10 @@ class Discord {
 					return
 				data.d := new this.reaction(this, data.d)
 
+			case "MESSAGE_DELETE":
+				msg := this.cache.messageGet(data.channel_id, data.id)
+				msg.deleted := true
+
 			case "READY":
 				this.session_id := Data.d.session_id
 				this.self := data.d.user
@@ -706,18 +710,16 @@ class Discord {
 		__New(api, data, guild := "", channel := "") {
 			static avatar := "https://cdn.discordapp.com/avatars/{}/{}.webp?size=1024"
 			this.api := api
-			; TODO: dont use this.data
-			this.data := data
-			this.id := data.id
-			this.bot := data.bot
-			this.name := data.username
+			for key, value in data {
+				this[key] := value
+			}
+
 			this.guild := guild
 			this.channel := channel
-			this.discriminator := data.discriminator
 			this.mention := "<@" data.id ">"
 			this.avatar := format(avatar, this.id, data.avatar)
 			this.permissions := []
-			this.isGuildOwner := (this.id = guild.owner)
+			this.isGuildOwner := (this.id = guild.owner_id)
 			this.isBotOwner := (this.id = api.owner.id)
 			if !guild {
 				try {
@@ -726,6 +728,7 @@ class Discord {
 					debug.print(e.what " did not provide a guild")
 				}
 			}
+
 			if guild {
 				member := api.getMember(guild.id, this.id)
 				this.roles := member.roles
@@ -779,12 +782,10 @@ class Discord {
 	class guild {
 		__New(api, id) {
 			this.api := api
-			; TODO: dont use this.data
-			this.data := api.cache.guildGet(id)
-			this.name := this.data.name
-			this.id := this.data.id
-			this.owner := this.data.owner_id
-			this.region := this.data.region
+			guild := api.cache.guildGet(id)
+			for key, value in guild {
+				this[key] := value
+			}
 		}
 	}
 
@@ -804,13 +805,18 @@ class Discord {
 			this.api := api
 			if guild {
 				index := api.getChannel(guild.id, channel)
-				; TODO: dont use this.data
-				this.data := guild.data.channels[index]
-				this.overwrites := this.data.permission_overwrites
-				this.nsfw := this.data.nsfw
+				channel := guild.channels[index]
+				for key, value in channel {
+					this[key] := value
+				}
 				this.guild := 1
+			} else {
+				try {
+					throw Exception("", -3)
+				} catch e {
+					debug.print(e.what " did not provide a guild")
+				}
 			}
-			this.id := channel
 		}
 
 		getOverwrite(id) {
@@ -893,7 +899,15 @@ class Discord {
 		}
 
 		delete() {
-			this.api.DeleteMessage(this.channel.id, this.id)
+			msg := this.api.cache.messageGet(this.channel.id, this.id)
+			if msg.deleted
+				return
+			try {
+				this.api.DeleteMessage(this.channel.id, this.id)
+			} catch e {
+				if (e.Extra != 10008)
+					throw e
+			}
 		}
 
 		getEmoji(name) {
