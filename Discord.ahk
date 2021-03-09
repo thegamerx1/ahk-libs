@@ -489,8 +489,7 @@ class Discord {
 	OP_HELLO(Data) {
 		this.HeartbeatACK := True
 		Interval := Data.d.heartbeat_interval
-		fn := ObjBindMethod(this, "SendHeartbeat")
-		SetTimer %fn%, % Interval
+		SetTimer(ObjBindMethod(this, "SendHeartbeat"), Interval)
 		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 50)
 		this.connected := true
 	}
@@ -527,7 +526,7 @@ class Discord {
 			case "GUILD_CREATE":
 				this.cache.guildSet(data.d.id, data.d)
 				if (data.d.id = this.owner.guild) {
-					TimeOnce(ObjBindMethod(this, "dispatch", "READY", {}), 0)
+					TimeOnce(ObjBindMethod(this, "dispatch", "READY", {}), 1)
 					debug.print("[DISCORD] READY")
 				}
 			case "GUILD_UPDATE":
@@ -707,6 +706,7 @@ class Discord {
 		__New(api, data, guild := "", channel := "") {
 			static avatar := "https://cdn.discordapp.com/avatars/{}/{}.webp?size=1024"
 			this.api := api
+			; TODO: dont use this.data
 			this.data := data
 			this.id := data.id
 			this.bot := data.bot
@@ -779,6 +779,7 @@ class Discord {
 	class guild {
 		__New(api, id) {
 			this.api := api
+			; TODO: dont use this.data
 			this.data := api.cache.guildGet(id)
 			this.name := this.data.name
 			this.id := this.data.id
@@ -790,7 +791,6 @@ class Discord {
 	class reaction {
 		__New(api, data) {
 			this.api := api
-			this.data := data
 			this.guild := new discord.guild(api, data.guild_id)
 			this.author := new discord.author(api, data.member.user, this.guild)
 			this.message := data.message_id
@@ -804,6 +804,7 @@ class Discord {
 			this.api := api
 			if guild {
 				index := api.getChannel(guild.id, channel)
+				; TODO: dont use this.data
 				this.data := guild.data.channels[index]
 				this.overwrites := this.data.permission_overwrites
 				this.nsfw := this.data.nsfw
@@ -823,36 +824,37 @@ class Discord {
 		}
 	}
 
-	class interaction {
-		__New(api, data) {
-			this.api := api
-			this.guild := new discord.guild(api, data.guild_id)
-			this.channel := new discord.channel(api, data.channel_id, data.guild)
-			api.cache.memberSet(data.guild_id, data.member)
-			this.author := new discord.author(api, data.member.user, this.guild, this.channel)
-			this.token := data.token
-			this.id := data.id
-			this.data := data.data
-			this.isInteraction := true
-		}
+	; class interaction {
+	; 	__New(api, data) {
+	; 		this.api := api
+	; 		this.guild := new discord.guild(api, data.guild_id)
+	; 		this.channel := new discord.channel(api, data.channel_id, data.guild)
+	; 		api.cache.memberSet(data.guild_id, data.member)
+	; 		this.author := new discord.author(api, data.member.user, this.guild, this.channel)
+	; 		this.token := data.token
+	; 		this.id := data.id
+	; 		this.data := data.data
+	; 		this.isInteraction := true
+	; 	}
 
-		reply(type, message := "") {
-			if (!message && StrLen(type) != 1) {
-				response := {type: 4, data: discord.utils.getMsg(type)}
-			} else {
-				response := {type: type}
-				if message
-					response.data := discord.utils.getMsg(message)
-			}
-			data := this.api.callAPI("POST", "interactions/"  this.id "/" this.token "/callback", response)
-		}
-	}
+	; 	reply(type, message := "") {
+	; 		if (!message && StrLen(type) != 1) {
+	; 			response := {type: 4, data: discord.utils.getMsg(type)}
+	; 		} else {
+	; 			response := {type: type}
+	; 			if message
+	; 				response.data := discord.utils.getMsg(message)
+	; 		}
+	; 		data := this.api.callAPI("POST", "interactions/"  this.id "/" this.token "/callback", response)
+	; 	}
+	; }
 
 	class message {
 		__New(api, data) {
 			this.id := data.id
 			this.api := api
 			this.message := data.content
+			this.embeds := data.embeds
 			if data.guild_id {
 				this.guild := new discord.guild(api, data.guild_id)
 			}
@@ -863,7 +865,7 @@ class Discord {
 				this.author := new discord.author(api, data.author, this.guild, this.channel)
 				if data.referenced_message {
 					data.referenced_message.guild_id := data.guild_id
-					this.referenced_msg := new api.message(api, data.referenced_message)
+					this.referenced_msg := new discord.message(api, data.referenced_message)
 				}
 			}
 		}
@@ -874,6 +876,10 @@ class Discord {
 
 		react(reaction) {
 			this.api.AddReaction(this.channel.id, this.id, reaction)
+		}
+
+		unReact(reaction) {
+			this.api.RemoveReaction(this.channel.id, this.id, reaction)
 		}
 
 		reply(data) {

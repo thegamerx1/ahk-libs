@@ -143,8 +143,14 @@ ClipBoardPaste(byref text) {
 	clipboard := oldclipboard
 }
 
+SetTimer(fn, time) {
+	if (time == 0)
+		time = off
+	SetTimer %fn%, %time%
+}
+
 TimeOnce(fn, time := 1000) {
-	SetTimer %fn%, -%time%
+	SetTimer(fn, -time)
 }
 
 strGetLast(str, limit) {

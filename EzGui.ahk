@@ -24,14 +24,12 @@ class EzGui {
 		try {
 			this.initGui()
 		} catch e {
-			this.fatalError(e.message)
+			this.fatalError(JSON.dump(e,0,1))
 		}
 		this.resetFont()
 	}
 
 	initGui() {
-		local
-		global BrowserEvent
 		this.controls := {}
 		conf := this.config
 		if conf.handleExit
@@ -57,12 +55,19 @@ class EzGui {
 			KEY_FBE := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION"
 			RegWrite REG_DWORD, % KEY_FBE, % EXE_NAME, 11001
 
-			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, about:blank
+			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, shell.explorer
 			this.wb := wb
 			this.controls.wb := hwb
 
 			ComObjConnect(wb, new BrowserEvent)
 			if A_IsCompiled {
+				wb.Navigate("about:blank")
+				while (wb.readyState != 4) {
+					if (A_Index-1 > 50*100) { ; 5s
+						this.fatalError("Waiting timed out (readyState) A_IsCompiled")
+					}
+					Sleep 50
+				}
 				this.doc.write(GetScriptResource(conf.browserhtml "minify/index.html"))
 				this.doc.close()
 			} else {
@@ -84,42 +89,40 @@ class EzGui {
 			this.wb.RegisterAsDropTarget := false
 			; end yoinked code
 
-			tries := 0
-			while (wb.readyState < 4) {
-				if (tries > 50*100) { ; 5s
+			while (wb.readyState != 4) {
+				if (A_Index-1 > 50*100) { ; 5s
 					this.fatalError("Waiting timed out (readyState)")
 				}
 				Sleep 50
-				tries++
 			}
+			debug.print("browser ready", {label: "EzGui"})
 
 			ControlGet, IES, hwnd,, Internet Explorer_Server1, % "ahk_id" this.controls.gui
 			this.controls.IES := IES
 			DllCall("ole32\RevokeDragDrop", "UPtr", IES)
 
-			this.wnd.ahk := this.creator
-			this.wnd.gui := this
-			this.wnd.console := this.console
 			if !A_IsCompiled {
-				tries := 0
 				Loop {
 					try
 						if this.wnd.inject.done
 							break
-					if (tries > 50*100)
+					if (A_Index-1 > 50*100)
 						this.fatalError("Waiting timed out (inject)")
 
 					Sleep 50
-					tries++
 				}
+				debug.print("injected", {label: "EzGui"})
 			}
+			this.wnd.ahk := this.creator
+			this.wnd.gui := this
+			this.wnd.console := this.console
 			this.wnd.ready()
 		}
 		Gui Margin, % conf.margin, % conf.margin
 	}
 
 	fatalError(what) {
-		Msgbox 16, Fatal error, EzGui encountered a fatal error in`n%what%
+		Msgbox 16, Fatal error, EzGui encountered a fatal error and will exit`n%what%
 		ExitApp 1
 	}
 
@@ -146,7 +149,7 @@ class EzGui {
 	}
 
 	handleExit(Reason, Code) {
-		if (contains(Reason, ["Shutdown"]) || Code == -1)
+		if (contains(Reason, ["Shutdown"]) || Code = -1)
 			return
 
 		if IsObject(this.creator.shouldExit) {
@@ -330,6 +333,7 @@ class EzGui {
 	WM_KEYDOWN(wParam, lParam, Msg) {
 		if (Chr(wParam) ~= "[A-Z]" || wParam = 0x74)
 			return
+
 		pipa := ComObjQuery(this.wb, "{00000117-0000-0000-C000-000000000046}")
 		VarSetCapacity(kMsg, 48), NumPut(A_GuiY, NumPut(A_GuiX
 		, NumPut(A_EventInfo, NumPut(lParam, NumPut(wParam
@@ -474,9 +478,8 @@ class BrowserEvent {
 	}
 
 	OnKeyPress(doc) {
-		local
-		static keys := {1: {name: "selectall"}, 3:{name: "copy", allow: true}, 22:{name: "paste"}, 24:{name: "cut"}}
 		static inputs := ["input", "textarea", "code"]
+		static keys := {1: {name: "selectall"}, 3:{name: "copy", allow: true}, 22:{name: "paste"}, 24:{name: "cut"}}
 		keyCode := doc.parentWindow.event.keyCode
 		if keys.HasKey(keyCode) {
 			allow := false

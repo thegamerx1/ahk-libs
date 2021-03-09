@@ -20,7 +20,7 @@ class configLoader {
 		debug.print("Fixing", {label: this.file})
 
 		file := FileOpen(this.file, "w")
-		file.Write(JSON.dump(this.default))
+		file.Write(JSON.dump(IsObject(this.default) ? this.default : {}))
 		file.close()
 		this.loadfile()
 	}
