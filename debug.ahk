@@ -14,6 +14,12 @@ class Debug {
 		}
 
 		this.log := ""
+		OnError(ObjBindMethod(this, "error"))
+	}
+
+	error(e) {
+		this.print("Unhandled error: ")
+		this.print(e)
 	}
 
 	clean(reason, code) {
