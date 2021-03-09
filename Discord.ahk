@@ -370,7 +370,7 @@ class Discord {
 		return this.CallAPI("GET", "channels/" channel "/messages?" requests.encode(opt))
 	}
 
-	GetMessage(channel, id) {s
+	GetMessage(channel, id) {
 		if !this.cache.messageGet(channel, id)
 			this.cache.messageSet(channel, this.CallAPI("GET", "channels/" channel "/messages/" id))
 
