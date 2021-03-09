@@ -8,5 +8,5 @@ UnZip(zipFile, fileInside, saveTo) {
 		$zip.Dispose()
 	)"
 
-	Run PowerShell.exe -Command &{%script%} "%zipFile%" "%fileInside%" "%saveTo%",, hide
+	RunWait PowerShell.exe -Command &{%script%} "%zipFile%" "%fileInside%" "%saveTo%",, hide
 }
