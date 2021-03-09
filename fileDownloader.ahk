@@ -44,7 +44,7 @@ class fileDownloader {
         if this.FinalSize {
             PercentDone := Round(this.CurrentSize/this.FinalSize*100)
         } else {
-            PercentDone := 10
+            PercentDone := "Unkown"
         }
 
         this.LastSizeTick := this.CurrentSizeTick
