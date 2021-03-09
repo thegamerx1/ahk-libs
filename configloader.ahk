@@ -1,11 +1,11 @@
 #Include <json>
 #Include <functionsahkshouldfuckinghave>
 class configLoader {
-	__New(file, default := "") {
+	__New(file, default := "", readonly := false) {
 		this.file := file
 		if (!IsObject(default) && default)
 			throw Exception("Invalid default object", -1)
-
+		this.readonly := readonly
 		this.default := default
 		if !FileExist(this.file)
 			this.fixfile()
@@ -14,9 +14,13 @@ class configLoader {
 		if !isObject(this.data) {
 			this.fixfile()
 		}
+		if readonly
+			return this.data
 	}
 
 	fixfile() {
+		if this.readonly
+			throw Exception(this.file " is broken!", -2)
 		debug.print("Fixing", {label: this.file})
 
 		file := FileOpen(this.file, "w")
