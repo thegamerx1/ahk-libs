@@ -164,7 +164,7 @@ TimeOnce(fn, time := 1000) {
 strGetLast(str, limit) {
 	out := ""
 	lines := StrSplit(str, "`n", "`r")
-	length := Max(lines.length()-limit, 1)
+	length := Max(lines.length()-limit, 0)
 	for _, value in lines {
 		if (A_Index > length)
 			out .= value "`n"
