@@ -122,16 +122,18 @@ class Debug {
 		switch start {
 			case "|":
 				this.debug(out)
+				return
 			case ">":
 				this.std(out)
 			case ".":
 				this.debug(out)
 		}
 
+		this.log .= out
+
 		if isAction
 			return
 
-		this.log .= out
 
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
