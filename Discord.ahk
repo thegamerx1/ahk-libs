@@ -18,9 +18,10 @@ class Discord {
 					,11: "HeartbeatACK"}
 	reconnects := 0
 
-	__New(parent, token, intents, owner_guild := "", owner_id := "") {
+	__New(parent, token, intents, owner_guild := "", owner_id := "", isDebug := true) {
 		;; ? owner guild is required for checking when the bot has loaded the owner's guild so it can use those emotes at start
 		;; ? owner guild and owner id are used to add .isGuildOwner and .isBotOwner to the ctx
+		this.log := debug.space("Discord", isDebug)
 		this.utils.init(this)
 		this.cache.init(this)
 		this.intents := intents
@@ -38,7 +39,7 @@ class Discord {
 	connect() {
 		try {
 			data := this.CallAPI("GET", "gateway/bot")
-			debug.print("[DISCORD] " data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
+			this.log("." data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
 			this.ws := new WebSocket(this, data.url "?v=8&encoding=json")
 		} catch {
 			return 1
@@ -52,11 +53,11 @@ class Discord {
 		this.ws := ""
 	}
 
-	reconnect(useResume := false) {
+	reconnect(useResume := false, isSafe := false) {
 		static TIMEOUT := 60*1000
 		static reconnec := "[Reconnect] Last reconnect: {} ago #{}"
-		debug.print(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
-		if (this.last_reconnect.get() < TIMEOUT)
+		this.log(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
+		if (!isSafe && this.last_reconnect.get() < TIMEOUT)
 			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
@@ -65,7 +66,7 @@ class Discord {
 		this.disconnect()
 		while this.connect() {
 			this.disconnect()
-			debug.print("[Reconnect] Trying to reconnect #" A_Index)
+			this.log("[Reconnect] Trying to reconnect #" A_Index)
 			DllCall("sleep", "int", 5*Min(A_Index, 120)*1000)
 		}
 
@@ -246,7 +247,7 @@ class Discord {
 
 		webhookRes(http) {
 			if (http.status != 204 && http.status != 200)
-				debug.print("[Webhook] Error " http.status ": " http.text)
+				this.log("[Webhook] Error " http.status ": " http.text, "ERROR")
 		}
 
 		getId(str) {
@@ -314,7 +315,7 @@ class Discord {
 
 			http.headers["User-Agent"] := "Discord.ahk"
 			httpout := http.send(data ? JSON.dump(data) : "")
-			debug.print(format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
+			this.log("." format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
 			httpjson := httpout.json()
 			; TODO: ratelimit
 			; this.ratelimit.bucket := httpout.headers["x-ratelimit-bucket"]
@@ -337,7 +338,7 @@ class Discord {
 
 		; * Request was unsuccessful
 		if !StartsWith(httpout.status, 20) {
-			debug.print("Request failed: " httpout.text)
+			this.log("Request failed: " httpout.text, "WARNING")
 			throw Exception(httpjson.message, -2, httpjson.code)
 		}
 		return httpjson
@@ -488,7 +489,7 @@ class Discord {
 	}
 
 	resume() {
-		debug.print("[Reconnect] Trying to resume with session")
+		this.log("[Reconnect] Trying to resume with session")
 		res := this.resumedata
 		this.Send({op: 6, d: {token: this.token, session_id: res.session, seq: res.seq}})
 		this.resumedata := ""
@@ -511,7 +512,7 @@ class Discord {
 	}
 
 	OP_INVALIDSESSION(Data) {
-		Debug.print("[SESSION] Attempting to identify to discord api")
+		this.log("[SESSION] Attempting to identify to discord api")
 		TimeOnce(ObjBindMethod(this, "identify"), random(1000, 4000))
 	}
 
@@ -543,7 +544,7 @@ class Discord {
 				this.cache.guildSet(data.d.id, data.d)
 				if (data.d.id = this.owner.guild) {
 					TimeOnce(ObjBindMethod(this, "dispatch", "READY", {}), 1)
-					debug.print("[DISCORD] READY")
+					this.log(".READY")
 				}
 			case "GUILD_UPDATE":
 				this.cache.guildUpdate(data.d.guild_id, data.d)
@@ -600,23 +601,22 @@ class Discord {
 		opname := this.OPCode[data.op]
 
 		if (opname != "dispatch")
-			debug.print("|" opname)
+			this.log("." opname)
 		this["OP_" opname](Data)
 	}
 
 	OnError(reason := "", code := "", message := "") {
-		; TODO FIX:
-		debug.print(format("Error, {},: {} {}", code, reason, message))
+		this.log(format("Error, {},: {} {}", code, reason, message), "ERROR")
 		this.reconnect(true)
 	}
 
 
 	OnClose(reason := "", code := "") {
 		static allowed := [1000, 1001, 4000, 4007, 4009]
-		debug.print(format("[DISCORD] Closed, {}: {}", code, reason))
+		this.log(format("Closed, {}: {}", code, reason), "INFO")
 		if !contains(code, allowed)
-			Throw Exception("Code not allowed")
-		this.reconnect(true)
+			Throw Exception("Discord closed with an error")
+		this.reconnect(true, true)
 	}
 
 
@@ -737,7 +737,7 @@ class Discord {
 				try {
 					throw Exception("", -3)
 				} catch e {
-					debug.print(e.what " did not provide a guild")
+					this.log(e.what " did not provide a guild", "WARNING")
 				}
 			}
 
@@ -826,7 +826,7 @@ class Discord {
 				try {
 					throw Exception("", -3)
 				} catch e {
-					debug.print(e.what " did not provide a guild")
+					this.log(e.what " did not provide a guild", "WARNING")
 				}
 			}
 		}
