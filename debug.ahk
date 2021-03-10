@@ -122,18 +122,16 @@ class Debug {
 		switch start {
 			case "|":
 				this.debug(out)
-				return
 			case ">":
 				this.std(out)
 			case ".":
 				this.debug(out)
 		}
 
-		this.log .= out
-
 		if isAction
 			return
 
+		this.log .= out
 
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
@@ -151,10 +149,10 @@ class Debug {
 	}
 
 	debug(byref str) {
-		if !A_DebuggerName {
-			this.std(str)
-		} else {
+		if A_DebuggerName {
 			OutputDebug % str
+		} else {
+			this.std(str)
 		}
 	}
 
