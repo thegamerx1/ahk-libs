@@ -17,6 +17,16 @@ class Debug {
 		OnError(ObjBindMethod(this, "error"))
 	}
 
+	space(name, debug := false) {
+		return ObjBindMethod(this, "spacecall", {label: name, debug: debug})
+	}
+
+	spacecall(opt, _, text, sev := "", options := "") {
+		opt := ObjectMerge(opt, options ? options : {})
+		opt.sev := sev
+		this.print(text, opt)
+	}
+
 	error(e) {
 		this.print("Unhandled error: ")
 		this.print(e)
@@ -71,8 +81,8 @@ class Debug {
 	}
 
 	print(message := "", options := "") {
-		static defaultconf := {label: "", end: "`n", pretty: false}
-		static actions := [">", "|"]
+		static defaultconf := {label: "", end: "`n", pretty: false, debug: false}
+		static actions := [">", "|", "."]
 
 		config := ezConf(options, defaultconf)
 		isAction := false
@@ -84,6 +94,13 @@ class Debug {
 			message := SubStr(message, 2)
 		}
 
+		switch start {
+			case ".":
+				if !config.debug
+					return
+				config.sev := "DEBUG"
+		}
+
 		if IsObject(message)
 			message := JSON.dump(message, 1, config.pretty)
 
@@ -92,6 +109,8 @@ class Debug {
 			out .= Format(this.config.stampformat, A_Hour, A_Min, A_Sec)
 		if config.label
 			out .= "[" config.label "] "
+		if config.sev
+			out .= config.sev " "
 
 
 		if (message = "") {
@@ -102,10 +121,13 @@ class Debug {
 
 		switch start {
 			case "|":
-				OutputDebug % out
+				this.debug(out)
 			case ">":
 				this.std(out)
+			case ".":
+				this.debug(out)
 		}
+
 		if isAction
 			return
 
@@ -126,10 +148,18 @@ class Debug {
 		this.std(out)
 	}
 
-	std(byref message) {
+	debug(byref str) {
+		if !A_DebuggerName {
+			this.std(str)
+		} else {
+			OutputDebug % str
+		}
+	}
+
+	std(byref str) {
 		if !this.errorStdOut {
 			try {
-				FileAppend %message%, *
+				FileAppend %str%, *
 			} catch e {
 				this.errorStdOut := true
 			}
