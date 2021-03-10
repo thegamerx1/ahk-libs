@@ -6,9 +6,9 @@ class includer {
 		FileRead extensionlist, % this.file
 
 		checklist := ""
-		Loop Files, %pathToFolder%/*.ahk, F
+		Loop Files, %pathToFolder%/*.ahk, FR
 		{
-			if (SubStr(A_LoopFileName, 1, 1) = "_")
+			if (SubStr(A_LoopFileName, 1, 1) = "_" || SubStr(getLast(A_LoopFileDir), 1, 1) = "_")
 				continue
 
 			match := regex(A_LoopFileName, "^(?<name>\w+)\.ahk$")
@@ -16,8 +16,8 @@ class includer {
 				throw Exception("Error on command name: " A_LoopFileName, -1)
 
 			name := match.name
-			checklist .= "#include *i " pathToFolder "/" A_LoopFIleName "`n"
-			this.list[A_LoopFileName] := name
+			checklist .= "#include *i " A_LoopFilePath "`n"
+			this.list[A_LoopFileName] := {name: name, folder: getLast(A_LoopFileDir)}
 		}
 		if (extensionlist != checklist) {
 			file := FileOpen(this.file, "w")
