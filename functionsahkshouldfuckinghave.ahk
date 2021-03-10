@@ -9,6 +9,14 @@ Array2String(array, delimiter := " ") {
 	return out
 }
 
+getLast(str) {
+	return StrSplit(str, ["/", "\"]).pop()
+}
+
+title(str) {
+	return Format("{:T}", str)
+}
+
 ObjectMerge(array1, array2) {
 	array2 := array2.clone()
 	for key, value in array1 {
