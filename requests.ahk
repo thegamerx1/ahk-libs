@@ -36,6 +36,7 @@ class requests {
 				this.com.OnReadyStateChange := ObjBindMethod(this, "readyState")
 			}
 		}
+
 		this.com.send(data)
 
 		if !this.async {
