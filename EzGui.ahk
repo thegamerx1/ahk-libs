@@ -15,10 +15,11 @@ class EzGui {
 			,title: "EzGui"
 			,autosize: false
 			,browser: false
-			,bordersize: 5}
-
+			,bordersize: 5
+			,debug: false}
 
 		this.config := ezConf(config, defaultconf)
+		this.log := debug.space("EzGui", config.debug)
 		this.creator := creator
 		this.parentname := creator.__Class
 		try {
@@ -95,7 +96,7 @@ class EzGui {
 				}
 				Sleep 50
 			}
-			debug.print("browser ready", {label: "EzGui"})
+			this.log(".browser ready")
 
 			ControlGet, IES, hwnd,, Internet Explorer_Server1, % "ahk_id" this.controls.gui
 			this.controls.IES := IES
@@ -111,7 +112,7 @@ class EzGui {
 
 					Sleep 50
 				}
-				debug.print("injected", {label: "EzGui"})
+				this.log(".injected")
 			}
 			this.wnd.ahk := this.creator
 			this.wnd.gui := this
@@ -140,7 +141,7 @@ class EzGui {
 
 	class console {
 		log(a) {
-			debug.print(a)
+			debug.print(a, {label: "JsConsole"})
 		}
 
 		error(a) {
@@ -282,7 +283,7 @@ class EzGui {
 	}
 
 	__Delete() {
-		Debug.print("|Deleted EzGui of " this.parentname)
+		this.log(".Deleted EzGui of " this.parentname)
 	}
 
 	initHooks() {
@@ -437,10 +438,6 @@ class MessageManager {
 		this.parentname := this._this.parentname
 		this._this := ""
 	}
-
-	__Delete() {
-		debug.print("|Deleted Message Manager of " this.parentname)
-	}
 }
 
 class EventManager {
@@ -464,10 +461,6 @@ class EventManager {
 		}
 		this.parentname := this._this.parentname
 		this._this := ""
-	}
-
-	__Delete() {
-		debug.print("|Deleted Event Manager of " this.parentname)
 	}
 }
 
