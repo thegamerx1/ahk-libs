@@ -729,6 +729,7 @@ class Discord {
 			this.guild := guild
 			this.channel := channel
 			this.mention := "<@" data.id ">"
+			this.notMention := this.username "@" this.discriminator
 			this.avatar := format(avatar, this.id, data.avatar)
 			this.permissions := []
 			this.isGuildOwner := (this.id = guild.owner_id)
@@ -780,10 +781,6 @@ class Discord {
 
 		get(userid) {
 			return new discord.author(this.api, this.api.getUser(userid), this.guild, this.channel)
-		}
-
-		notMention() {
-			return this.name "@" this.discriminator
 		}
 
 		checkFlag(perms, flag) {
