@@ -39,6 +39,5 @@ function generateTemplates() {
 	})
 	return object
 }
-
 //kool jquery
 jQuery.fn.reverse = [].reverse
