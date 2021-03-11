@@ -17,7 +17,7 @@ class includer {
 
 			name := match.name
 			checklist .= "#include *i " A_LoopFilePath "`n"
-			this.list[A_LoopFileName] := {name: name, folder: getLast(A_LoopFileDir)}
+			this.list[A_LoopFileName] := {name: name, folder: getLast(A_LoopFileDir), path: A_LoopFilePath}
 		}
 		if (extensionlist != checklist) {
 			file := FileOpen(this.file, "w")

@@ -57,7 +57,7 @@ class Discord {
 
 	reconnect(useResume := false) {
 		static TIMEOUT := 60*1000
-		static reconnec := "[Reconnect] Last reconnect: {} ago #{}"
+		static reconnec := ".[Reconnect] Last reconnect: {} ago #{}"
 		this.log(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
 
 		if (useResume && this.session_id)
