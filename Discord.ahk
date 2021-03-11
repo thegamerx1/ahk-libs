@@ -46,7 +46,7 @@ class Discord {
 			return 1
 		}
 		this.last_reconnect := new Counter(, true)
-		this.reconnectting := false
+		this.reconnecting := false
 	}
 
 	disconnect() {
@@ -56,6 +56,8 @@ class Discord {
 	}
 
 	reconnect(useResume := false) {
+		if this.reconnecting
+			return
 		static TIMEOUT := 60*1000
 		static reconnec := ".[Reconnect] Last reconnect: {} ago #{}"
 		this.log(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
@@ -358,7 +360,7 @@ class Discord {
 
 	; ? Sends data through the websocket
 	Send(Data) {
-		if (this.reconnectting || !this.connected) {
+		if (this.reconnecting || !this.connected) {
 			this.log("Couldnt send", "ERROR")
 			this.log(data)
 		}
