@@ -76,7 +76,7 @@ class Discord {
 	}
 
 	delete() {
-		this.ws.disconnect()
+		this.disconnect()
 		this.creator := false
 	}
 
@@ -370,7 +370,7 @@ class Discord {
 	SetPresence(status, playing := "", type := 0) {
 		activity := []
 		if playing
-			activity.push({name: playing, type: type})
+			activity.push({name: playing, details: playing, type: type})
 		this.Send({op: 3, d: {since: "null", activities: activity, status: status, afk: false}})
 	}
 
