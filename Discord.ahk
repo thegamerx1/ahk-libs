@@ -439,7 +439,7 @@ class Discord {
 	}
 
 	resume() {
-		this.log("[Reconnect] Trying to resume with session")
+		this.log(".[Reconnect] Trying to resume with session")
 		res := this.resumedata
 		this.Send({op: 6, d: {token: this.token, session_id: res.session, seq: res.seq}})
 		this.resumedata := ""
