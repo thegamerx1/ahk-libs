@@ -851,7 +851,9 @@ class Discord {
 
 	class channel {
 		; TODO: Edit Channel perms,
-		__New(api, id, guild) {
+		__New(api, id, guild := "") {
+			if !guild
+				guild := new discord.guild(api, api.cache.findChannelGuild(id))
 			this.api := api
 			index := api.cache.channelGet(guild.id, id)
 			channel := guild.channels[index]
