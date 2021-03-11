@@ -37,6 +37,7 @@ class Discord {
 	}
 
 	connect() {
+		this.reconnecting := true
 		try {
 			data := this.CallAPI("GET", "gateway/bot")
 			this.log("." data.session_start_limit.remaining "/" data.session_start_limit.total " identifies")
@@ -45,6 +46,7 @@ class Discord {
 			return 1
 		}
 		this.last_reconnect := new Counter(, true)
+		this.reconnectting := false
 	}
 
 	disconnect() {
@@ -356,6 +358,10 @@ class Discord {
 
 	; ? Sends data through the websocket
 	Send(Data) {
+		if (this.reconnectting || !this.connected) {
+			this.log("Couldnt send", "ERROR")
+			this.log(data)
+		}
 		this.ws.send(JSON.dump(Data))
 	}
 
