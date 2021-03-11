@@ -196,17 +196,18 @@ RandomString(length := 16) {
 }
 
 TypeOf(what) {
+	types := []
 	if IsObject(what)
-		return "obj"
+		types.push("obj")
 	if (bool(what) != "")
-		return "bool"
+		types.push("bool")
 	if regex(what, "^\d+$")
-		return "int"
+		types.push("int")
 	if regex(what, "^[a-z_]+$", "i")
-		return "str"
+		types.push("strAscii")
 	if regex(what, "^[a-z_0-9_]+$", "i")
-		return "strE"
-	return "?"
+		types.push("str")
+	return types
 }
 
 reload(args := "") {

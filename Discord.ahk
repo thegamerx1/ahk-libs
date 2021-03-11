@@ -53,12 +53,10 @@ class Discord {
 		this.ws := ""
 	}
 
-	reconnect(useResume := false, isSafe := false) {
+	reconnect(useResume := false) {
 		static TIMEOUT := 60*1000
 		static reconnec := "[Reconnect] Last reconnect: {} ago #{}"
 		this.log(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
-		if (!isSafe && this.last_reconnect.get() < TIMEOUT)
-			Throw Exception("Wont reconnect")
 
 		if (useResume && this.session_id)
 			this.setResume(this.session_id, this.seq)
@@ -114,7 +112,7 @@ class Discord {
 		}
 
 		channelGet(guild, id) {
-			for i, channel in this.guildGet(guild).channels {
+			for i, channel in this.guild[guild].channels {
 				if (channel.id = id)
 					return i
 			}
@@ -126,15 +124,15 @@ class Discord {
 		}
 
 		channelDelete(guild, id) {
-			this.guildGet(guild).channels.RemoveAt(this.channelGet(guild, id))
+			this.guild[guild].channels.RemoveAt(this.channelGet(guild, id))
 		}
 
 		channelSet(guild, data) {
-			this.guildGet(guild).channels.InsertAt(1, data)
+			this.guild[guild].channels.InsertAt(1, data)
 		}
 
 		memberGet(guild, id) {
-			for i, member in this.guildGet(guild).members
+			for i, member in this.guild[guild].members
 				if (member.user.id = id)
 					return i
 
@@ -142,12 +140,12 @@ class Discord {
 
 		memberDelete(guild, id) {
 			index := this.memberGet(guild, id)
-			this.guildGet(guild).members.RemoveAt(index)
+			this.guild[guild].members.RemoveAt(index)
 		}
 
 		memberUpdate(guild, id, member) {
 			index := this.memberGet(guild, id)
-			newm := this.guildGet(guild).members[index] := member
+			newm := this.guild[guild].members[index] := member
 			newm.roles.push(guild)
 		}
 
@@ -155,7 +153,7 @@ class Discord {
 			if (index := this.memberGet(guild, member.user.id))
 				return this.memberUpdate(guild, member.user.id, member)
 
-			newm := this.guildGet(guild).members.InsertAt(1, member)
+			newm := this.guild[guild].members.InsertAt(1, member)
 			newm.roles.push(guild)
 		}
 
@@ -176,10 +174,6 @@ class Discord {
 			this.guild[guild] := ObjectMerge(data, this.guild[guild])
 		}
 
-		guildGet(id) {
-			return this.guild[id]
-		}
-
 		guildDelete(id) {
 			this.guild.Delete(id)
 		}
@@ -190,7 +184,7 @@ class Discord {
 		}
 
 		roleDelete(guild, id) {
-			for _, role in this.getGuild(guild).roles {
+			for _, role in this.guild[guild].roles {
 				if (role.id = data.d.role_id) {
 					this.guild[guild].roles.RemoveAt(A_Index)
 					return
@@ -203,7 +197,7 @@ class Discord {
 		}
 
 		roleGet(guild, id) {
-			for i, role in this.guildGet(guild).roles
+			for i, role in this.guild[guild].roles
 				if (role.id = id)
 					return i
 		}
@@ -222,20 +216,31 @@ class Discord {
 		}
 
 		emojiGet(guild, name) {
-			for _, value in this.guildGet(guild).emojis
+			for _, value in this.guild[guild].emojis
 				if (value.name = name)
 					return value
 			Throw Exception("Couldn't find emoji", -2, name)
 		}
 
 		emojiUpdate(guild, emojis) {
-			this.guildGet(guild).emojis := emojis
+			this.guild[guild].emojis := emojis
 		}
 	}
 
 	class utils {
 		init(byref parent) {
 			this.api := parent
+		}
+
+		snowflakeTime(flake) {
+			static DISCORD_EPOCH := 1420070400000
+			return Unix2Miss(((flake >> 22) + DISCORD_EPOCH) / 1000)
+		}
+
+		convertEmoji(emote) {
+			if RegExMatch(emote, "^[\w#@$\?\[\]\x80-\xFF]+$")
+				emote := this.getEmoji(emote, false)
+			return emote
 		}
 
 		webhook(content, webhook) {
@@ -269,6 +274,11 @@ class Discord {
 		ISODATE(str) {
 			match := regex(str, "(?<YYYY>\d{4})-?(?<MM>\d{2})-?(?<DD>\d{2})T?(?<HH>\d{2}):?(?<MI>\d{2}):?(?<SS>\d{2})\.(?<SD>\d+)\+\d{2}:\d{2}")
 			return match.YYYY match.MM  match.DD  match.HH  match.MI  match.SS "."  match.SD
+		}
+
+		TOISO(date) {
+			FormatTime out, %date%, yyyy-MM-ddTHH:ss:00+00:00
+			return out
 		}
 
 		getEmoji(name, wrap := true) {
@@ -363,19 +373,8 @@ class Discord {
 		return this.CallAPI("POST", "channels/" channel "/messages", msg)
 	}
 
-	getChannel(guild, channel) {
-		return this.cache.channelGet(guild, channel)
-	}
-
-	GetMessages(channel, opt) {
-		return this.CallAPI("GET", "channels/" channel "/messages?" requests.encode(opt))
-	}
-
-	GetMessage(channel, id) {
-		if !this.cache.messageGet(channel, id)
-			this.cache.messageSet(channel, this.CallAPI("GET", "channels/" channel "/messages/" id))
-
-		return new discord.message(this, this.cache.messageGet(channel, id))
+	getGuild(id) {
+		return new discord.guild(this, id)
 	}
 
 	getUser(id) {
@@ -383,49 +382,6 @@ class Discord {
 			; this.cache.userSet(id, this.CallAPI("GET", "users/" id))
 			; Throw Exception("No user found with id " id, -2)
 		return this.cache.userGet(id)
-	}
-
-	EditMessage(channel, id, content) {
-		msg := this.utils.getMsg(content)
-		return this.CallAPI("PATCH", "channels/" channel "/messages/" id, msg)
-	}
-
-	AddBan(guild, user, reason, delet) {
-		return this.CallAPI("PUT", "guilds/" guild "/bans/" user, {reason: reason, delete_message_days: delet})
-	}
-
-	RemoveBan(guild, user) {
-		return this.CallAPI("DELETE", "guilds/" guild "/bans/" user)
-	}
-
-	AddReaction(channel, id, emote) {
-		if RegExMatch(emote, "^[\w#@$\?\[\]\x80-\xFF]+$")
-			emote := this.utils.getEmoji(emote, false)
-		return this.CallAPI("PUT", "channels/" channel "/messages/" id "/reactions/" urlEncode(emote) "/@me")
-	}
-
-	RemoveReaction(channel, id, emote) {
-		if RegExMatch(emote, "^[\w#@$\?\[\]\x80-\xFF]+$")
-			emote := this.utils.getEmoji(emote, false)
-		return this.CallAPI("DELETE", "channels/" channel "/messages/" id "/reactions/" urlEncode(emote) "/@me")
-	}
-
-	TypingIndicator(channel) {
-		return this.CallAPI("POST", "channels/" channel "/typing")
-	}
-
-	BulkDelete(channel, messages) {
-		return this.CallAPI("POST", "channels/" channel "/messages/bulk-delete", {messages: messages})
-	}
-
-	DeleteMessage(channel, message) {
-		return this.CallAPI("DELETE", "channels/" channel "/messages/" message)
-	}
-
-	LeaveGuild(guild) {
-		if !this.cache.guildGet(guild)
-			Throw Exception("Im not on guild " guild, -1)
-		return this.CallAPI("DELETE", "users/@me/guilds/" guild)
 	}
 
 	changeSelfNick(guild, nick) {
@@ -442,12 +398,6 @@ class Discord {
 		if !guild
 			guild := this.owner.guild
 		return this.cache.emojiGet(guild, name)
-	}
-
-	getMember(guild, id) {
-		if !this.cache.memberGet(guild, id)
-			this.cache.memberSet(guild, this.CallAPI("GET", "guilds/" guild "/members/" id))
-		return this.cache.guildGet(guild).members[this.cache.memberGet(guild, id)]
 	}
 
 	SendHeartbeat() {
@@ -540,6 +490,9 @@ class Discord {
 				if (this.owner.guild)
 					return
 
+			case "RESUMED":
+				this.log(".Succesfully resumed")
+
 			case "GUILD_CREATE":
 				this.cache.guildSet(data.d.id, data.d)
 				if (data.d.id = this.owner.guild) {
@@ -616,7 +569,7 @@ class Discord {
 		this.log(format("Closed, {}: {}", code, reason), "INFO")
 		if !contains(code, allowed)
 			Throw Exception("Discord closed with an error")
-		this.reconnect(true, true)
+		this.reconnect(true)
 	}
 
 
@@ -730,7 +683,7 @@ class Discord {
 			this.channel := channel
 			this.mention := "<@" data.id ">"
 			this.notMention := this.username "@" this.discriminator
-			this.avatar := format(avatar, this.id, data.avatar)
+			this.avatar := format(avatar, this.id, this.avatar)
 			this.permissions := []
 			this.isGuildOwner := (this.id = guild.owner_id)
 			this.isBotOwner := (this.id = api.owner.id)
@@ -743,13 +696,13 @@ class Discord {
 			}
 
 			if guild {
-				member := api.getMember(guild.id, this.id)
+				member := guild.getMember(this.id)
 				this.roles := member.roles
 
 				perms := allow := deny := 0
 				for _, value in this.roles {
 					index := api.cache.roleGet(guild.id, value)
-					role := api.cache.guildGet(guild.id).roles[index]
+					role := guild.roles[index]
 					perms |= role.permissions
 				}
 				if (this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) || this.isGuildOwner) {
@@ -786,15 +739,94 @@ class Discord {
 		checkFlag(perms, flag) {
 			return (perms & flag) == flag
 		}
+
+		modify(json) {
+			; ? JSON https://discord.com/developers/docs/resources/guild#modify-guild-member
+
+			this.api.CallAPI("PATCH", "guilds/" this.guild.id "/members/" this.id)
+		}
+
+		addRole(role) {
+			this.guild.role(this.id, role)
+		}
+
+		removeRole(role) {
+			this.guild.role(this.id, role, 0)
+		}
+
+		kick() {
+			this.guild.kick(this.id)
+		}
 	}
 
 	class guild {
 		__New(api, id) {
 			this.api := api
-			guild := api.cache.guildGet(id)
+			guild := api.cache.guild[id]
 			for key, value in guild {
 				this[key] := value
 			}
+			this.created_at := discord.utils.ToISO(discord.utils.snowflakeTime(this.id))
+		}
+
+		kick(user) {
+			this.api.CallAPI("DELETE", "guilds/" this.id "/members/" user)
+		}
+
+		ban(id, reason, delete) {
+			return this.api.CallAPI("PUT", "guilds/" this.id "/bans/" id, {reason: reason, delete_message_days: delete})
+		}
+
+		getBans() {
+			return this.api.CallAPI("GET", "guilds/" this.id "/bans")
+		}
+
+		unBan(id) {
+			return this.api.CallAPI("DELETE", "guilds/" this.id "/bans/" id)
+		}
+
+		leave() {
+			return this.api.CallAPI("DELETE", "users/@me/guilds/" this.id)
+		}
+
+		getChannel(id) {
+			return new discord.channel(this.api, id, this)
+		}
+
+		getMember(id) {
+			if !this.api.cache.memberGet(this.id, id)
+				this.api.cache.memberSet(this.id, this.api.CallAPI("GET", "guilds/" this.id "/members/" id))
+			return this.members[this.api.cache.memberGet(this.id, id)]
+		}
+
+		getRole(id) {
+			return this.roles[this.cache.role(this.id, id)]
+		}
+
+		modify(json) {
+			; ? JSON https://discord.com/developers/docs/resources/guild#modify-guild
+			return this.api.CallAPI("PATCH", "guilds/" this.id, json)
+		}
+
+		delete() {
+			this.api.CallAPI("DELETE" , "guilds/" this.id)
+		}
+
+		createChannel(json) {
+			; ? JSON https://discord.com/developers/docs/resources/guild#modify-guild
+			return this.api.CallAPI("POST", "guilds/" this.id "/channels", json)
+		}
+
+		channelPositions(array) {
+			return this.api.CallAPI("PATCH", "guilds/" this.id "/channels", array)
+		}
+
+		rolePositions(array) {
+			return this.api.CallAPI("PATCH", "guilds/" this.id "/roles", array)
+		}
+
+		role(user, id, addremove := 1) {
+			return this.api.CallAPI(addremove ? "PUT" : "DELETE", "guilds/" this.id "/members/" user "/roles/" id)
 		}
 	}
 
@@ -802,30 +834,40 @@ class Discord {
 		__New(api, data) {
 			this.api := api
 			this.guild := new discord.guild(api, data.guild_id)
-			this.author := new discord.author(api, data.member.user, this.guild)
-			this.message := data.message_id
-			this.channel := data.channel_id
+			this.channel := new discord.channel(api, data.channel_id, this.guild)
+			this.author := new discord.author(api, data.member.user, this.guild, this.channel)
 			this.emoji := data.emoji.name
+			this.message_id := data.message_id
+		}
+
+		message {
+			get {
+				if !this._message
+					this._message := this.channel.getMessage(this.message_id)
+				return this._message
+			}
 		}
 	}
 
 	class channel {
-		__New(api, channel, guild := "") {
+		; TODO: Edit Channel perms,
+		__New(api, id, guild) {
 			this.api := api
-			if guild {
-				index := api.getChannel(guild.id, channel)
-				channel := guild.channels[index]
-				for key, value in channel {
-					this[key] := value
-				}
-				this.guild := 1
-			} else {
-				try {
-					throw Exception("", -3)
-				} catch e {
-					this.log(e.what " did not provide a guild", "WARNING")
-				}
+			index := api.cache.channelGet(guild.id, id)
+			channel := guild.channels[index]
+			for key, value in channel {
+				this[key] := value
 			}
+			this.guild := guild
+		}
+
+		modify(json) {
+			; ? JSON from https://discord.com/developers/docs/resources/channel#modify-channel
+			return this.api.CallAPI("PATCH", "channels/" this.id, json)
+		}
+
+		delete() {
+			return this.api.CallAPI("DELETE", "channels/" this.id)
 		}
 
 		getOverwrite(id) {
@@ -836,6 +878,101 @@ class Discord {
 				if (value.id = id)
 					return value
 			}
+		}
+
+		TypingIndicator() {
+			this.api.CallAPI("POST", "channels/" this.id "/typing")
+		}
+
+		deleteMessage(message) {
+			if IsObject(message)
+				if (message.length() > 1) {
+					return this.api.CallAPI("POST", "channels/" this.id "/messages/bulk-delete", {messages: message})
+				} else {
+					message := message[1]
+				}
+			return this.api.CallAPI("DELETE", "channels/" this.id "/messages/" message)
+		}
+
+		getMessage(id) {
+			if !this.api.cache.messageGet(this.id, id)
+				this.api.cache.messageSet(this.id, this.api.CallAPI("GET", "channels/" this.id "/messages/" id))
+
+			return new discord.message(this.api, this.api.cache.messageGet(this.id, id))
+		}
+
+		getMessages(opt) {
+			return this.api.CallAPI("GET", "channels/" this.id "/messages?" requests.encode(opt))
+		}
+
+		sendMessage(content) {
+			msg := this.api.SendMessage(this.id, content)
+			msg.guild_id := this.guild.id
+			return msg
+		}
+
+		editMessage(id, data) {
+			msg := this.api.utils.getMsg(data)
+			return this.api.CallAPI("PATCH", "channels/" this.id "/messages/" id, msg)
+		}
+
+		reaction(id, emoji, addremove := 1) {
+			emoji := this.api.utils.convertEmoji(emoji)
+			return this.api.CallAPI(addremove ? "PUT" : "DELETE", "channels/" this.id "/messages/" id "/reactions/" urlEncode(emoji) "/@me")
+		}
+
+		getReactions(id, emoji, opt) {
+			emoji := this.api.utils.convertEmoji(emoji)
+			this.api.CallAPI("GET", "channels/" this.id "/messages/" id "/reactions/" emoji "?" requests.encode(opt))
+		}
+
+		deleteAllReactions(id) {
+			this.api.CallAPI("DELETE", "channels/" this.id "/messages/" id "/reactions/")
+		}
+
+		deleteEmojiReactions(id, emoji) {
+			emoji := this.api.utils.convertEmoji(emoji)
+			this.api.CallAPI("DELETE", "channels/" this.id "/messages/" id "/reactions/" emoji)
+		}
+
+		getInvites() {
+			return this.api.CallAPI("GET", "channels/" this.id "/invites")
+		}
+
+		createInvite(json) {
+			; ? JSON https://discord.com/developers/docs/resources/channel#create-channel-invite
+			return new discord.invite(this.guild, this.api.CallAPI("POST", "channels/" this.id "/invites", json))
+		}
+
+		getPins() {
+			msgs := []
+			pins := this.api.CallAPI("GET", "channels/" this.id "/pins")
+			for _, pin in pins {
+				msgs.push(new discord.message(this.api, pin))
+			}
+			return msgs
+		}
+
+		pin(id, addremove := 1) {
+			this.api.CallAPI(addremove ? "PUT" : "DELETE", "channels/" this.id "/pins/" id)
+		}
+	}
+
+	;; TODO: EMOJI OBJECT
+
+	class invite {
+		__New(guild, data) {
+			this.api := guild.api
+			this.guild := guild
+			this.code := data.code
+			this.channel := guild.getChannel(data.channel.id)
+			this.inviter := guild.getMember(data.inviter.id)
+			this.presence_count := data.approximate_presence_count
+			this.member_count := data.approximate_member_count
+		}
+
+		delete() {
+			this.api.CallAPI("DELETE",  "invites/" this.code)
 		}
 	}
 
@@ -886,25 +1023,23 @@ class Discord {
 		}
 
 		typing() {
-			this.api.TypingIndicator(this.channel.id)
+			this.channel.TypingIndicator()
 		}
 
-		react(reaction) {
-			this.api.AddReaction(this.channel.id, this.id, reaction)
+		react(emote) {
+			this.channel.reaction(this.id, emote, 1)
 		}
 
-		unReact(reaction) {
-			this.api.RemoveReaction(this.channel.id, this.id, reaction)
+		unReact(emote) {
+			this.channel.reaction(this.id, emote, 0)
 		}
 
 		reply(data) {
-			msg := this.api.SendMessage(this.channel.id, data)
-			msg.guild_id := this.guild.id
-			return new this.api.message(this.api, msg)
+			return new this.api.message(this.api, this.channel.sendMessage(data))
 		}
 
 		edit(data) {
-			this.api.EditMessage(this.channel.id, this.id, data)
+			this.channel.editMessage(this.id, data)
 		}
 
 		delete() {
@@ -912,7 +1047,7 @@ class Discord {
 			if msg.deleted
 				return
 			try {
-				this.api.DeleteMessage(this.channel.id, this.id)
+				this.channel.deleteMessage(this.id)
 			} catch e {
 				if (e.Extra != 10008)
 					throw e
@@ -921,6 +1056,14 @@ class Discord {
 
 		getEmoji(name) {
 			return this.api.utils.getEmoji(name)
+		}
+
+		pin() {
+			this.channel.pin(this.id)
+		}
+
+		unPin() {
+			this.channel.pin(this.id, 0)
 		}
 	}
 }
