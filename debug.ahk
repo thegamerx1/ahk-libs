@@ -128,10 +128,11 @@ class Debug {
 				this.debug(out)
 		}
 
+		this.log .= out
+
 		if isAction
 			return
 
-		this.log .= out
 
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
