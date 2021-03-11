@@ -173,9 +173,9 @@ strGetLast(str, limit) {
 }
 
 Unix2Miss(time) {
-    human=19700101000000
-    time-=((A_NowUTC-A_Now)//10000)*3600
-    human+=%time%,Seconds
+    human := 19700101000000
+    time -= ((A_NowUTC-A_Now)//10000)*3600
+    human += %time%,Seconds
     return human
 }
 
