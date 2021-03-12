@@ -20,7 +20,7 @@ title(str) {
 ObjectMerge(array1, array2) {
 	array2 := array2.clone()
 	for key, value in array1 {
-		array2[key] := IsObject(value) ? ObjectMerge(value, array2[key]) : value
+		array2[key] := (IsObject(value) && !value.base.IsArray) ? ObjectMerge(value, array2[key]) : value
 	}
 
 	return array2
