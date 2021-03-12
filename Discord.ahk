@@ -324,11 +324,13 @@ class Discord {
 		Loop 2 {
 			http.headers["Authorization"] := "Bot " this.token
 
-			if data
+			if IsObject(data) {
 				http.headers["Content-Type"] := "application/json"
+				data := JSON.dump(data)
+			}
 
 			http.headers["User-Agent"] := "Discord.ahk"
-			httpout := http.send(data ? JSON.dump(data) : "")
+			httpout := http.send(data)
 			this.log("." format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
 			httpjson := httpout.json()
 			; TODO: ratelimit
@@ -608,6 +610,12 @@ class Discord {
 
 	class embed {
 		__New(title := "", content := "", color := "0x159af3") {
+			static colors := [{name: "error", value: 0xAC3939}, {name: "success", value: 0x65C85B}]
+			for _, val in colors {
+				if val.name = color
+					color := val.value
+			}
+
 			if StrLen(title) > 256
 				Throw Exception("Embed title too long", -1)
 			if StrLen(content) > 2048
@@ -915,7 +923,7 @@ class Discord {
 			return this.api.CallAPI("GET", "channels/" this.id "/messages?" requests.encode(opt))
 		}
 
-		sendMessage(content) {
+		send(content) {
 			msg := this.api.SendMessage(this.id, content)
 			msg.guild_id := this.guild.id
 			return msg
@@ -1045,7 +1053,7 @@ class Discord {
 		}
 
 		reply(data) {
-			return new this.api.message(this.api, this.channel.sendMessage(data))
+			return new this.api.message(this.api, this.channel.send(data))
 		}
 
 		edit(data) {
