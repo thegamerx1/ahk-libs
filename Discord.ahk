@@ -483,7 +483,7 @@ class Discord {
 				if data.d.author.id = this.self.id
 					return ;; ? Ignore own messages
 
-				Data.d := new this.message(this, Data.d)
+				Data.d := new discord.message(this, Data.d)
 			case "MESSAGE_REACTION_ADD":
 				if data.d.user_id == this.self.user_id
 					return
