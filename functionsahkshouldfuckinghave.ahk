@@ -17,8 +17,18 @@ title(str) {
 	return Format("{:T}", str)
 }
 
-ObjectMerge(array1, array2) {
-	array2 := array2.clone()
+Clone(obj) {
+	cloned := obj.clone()
+	for i, key in obj {
+		if IsObject(key) {
+			cloned[i] := clone(key)
+		}
+	}
+	return cloned
+}
+
+ObjectMerge(array1, array2c) {
+	array2 := clone(array2c)
 	for key, value in array1 {
 		array2[key] := (IsObject(value) && !value.base.IsArray) ? ObjectMerge(value, array2[key]) : value
 	}
