@@ -707,7 +707,14 @@ class Discord {
 				try {
 					throw Exception("", -3)
 				} catch e {
-					this.log(e.what " did not provide a guild", "WARNING")
+					this.api.log(e.what " did not provide a guild", "WARNING")
+				}
+			}
+			if !channel {
+				try {
+					throw Exception("", -3)
+				} catch e {
+					this.api.log(e.what " did not provide a channel", "WARNING")
 				}
 			}
 
@@ -892,7 +899,7 @@ class Discord {
 			if !this.guild
 				Throw Exception("No guild provided on channel", -1)
 
-			for _, value in this.overwrites {
+			for _, value in this.permission_overwrites {
 				if (value.id = id)
 					return value
 			}
