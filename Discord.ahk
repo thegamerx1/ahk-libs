@@ -420,6 +420,7 @@ class Discord {
 
 		this.HeartbeatACK := False
 		this.Send({op: 1, d: this.Seq})
+		this.HeartbeatACKms := new counter()
 	}
 
 	identify() {
@@ -469,6 +470,7 @@ class Discord {
 
 	OP_HEARTBEATACK(Data) {
 		this.HeartbeatACK := True
+		this.ws.ping := this.HeartbeatACKms.get()
 	}
 
 	OP_INVALIDSESSION(Data) {
