@@ -9,6 +9,15 @@ Array2String(array, delimiter := " ") {
 	return out
 }
 
+Truncate(str, limit, ending := "..") {
+	lenEnd := StrLen(ending)
+	lenStr := StrLen(str)
+	if (lenStr > limit-lenEnd) {
+		return SubStr(str, 0, limit-lenEnd) ending
+	}
+	return str
+}
+
 getLast(str) {
 	return StrSplit(str, ["/", "\"]).pop()
 }
