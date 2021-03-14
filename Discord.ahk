@@ -38,6 +38,7 @@ class Discord {
 	handleError(e) {
 		if (e.what = "DISCORDAHK_CALLAPI") {
 			this.log("Request failed: " httpout.text, "WARNING")
+			return 1
 		}
 	}
 
@@ -178,7 +179,7 @@ class Discord {
 				member := this.guild[guild].members[index]
 				for _, role in member.roles {
 					if role = guild
-						break
+						return
 				}
 				member.roles.push(guild)
 			}
@@ -199,9 +200,9 @@ class Discord {
 
 		roleDelete(guild, id) {
 			for _, role in this.guild[guild].roles {
-				if (role.id = data.d.role_id) {
+				if (role.id = id) {
 					this.guild[guild].roles.RemoveAt(A_Index)
-					return
+					break
 				}
 			}
 		}
@@ -286,9 +287,9 @@ class Discord {
 			return msg
 		}
 
-		ISODATE(str) {
+		ISODATE(str, noms := false) {
 			match := regex(str, "(?<YYYY>\d{4})-?(?<MM>\d{2})-?(?<DD>\d{2})T?(?<HH>\d{2}):?(?<MI>\d{2}):?(?<SS>\d{2})\.(?<SD>\d+)\+\d{2}:\d{2}")
-			return match.YYYY match.MM  match.DD  match.HH  match.MI  match.SS "."  match.SD
+			return match.YYYY match.MM  match.DD  match.HH  match.MI  match.SS (noms ? "" : "."  match.SD)
 		}
 
 		TOISO(date) {
@@ -304,7 +305,7 @@ class Discord {
 			return wraps[1] name ":" emoji.id wraps[2]
 		}
 
-		sanitize(str) {
+		sanitize(str, delims := "``") {
 			return StrReplace(str, "``", chr(8203) "``")
 		}
 
@@ -509,14 +510,18 @@ class Discord {
 					return ;; ? Ignore own messages
 
 				output := new discord.message(this, Data.d)
+			case "MESSAGE_DELETE_BULK":
+				output := new discord.messageDeleteBulk(this, data.d)
+			case "MESSAGE_DELETE":
+				msg := this.cache.messageGet(data.d.channel_id, data.d.id)
+				msg.deleted := true
+				output := new discord.message(this, msg)
+
 			case "MESSAGE_REACTION_ADD":
 				if data.d.user_id == this.self.user_id
 					return
 				output := new this.reaction(this, data.d)
 
-			case "MESSAGE_DELETE":
-				msg := this.cache.messageGet(data.channel_id, data.id)
-				msg.deleted := true
 
 			case "READY":
 				this.session_id := Data.d.session_id
@@ -653,6 +658,12 @@ class Discord {
 				,description: content
 				,color: format("{:u}", color)
 				,fields: []}
+		}
+
+		setDescription(str) {
+			if StrLen(str) > 2048
+				Throw Exception("Embed description too long", -1)
+			this.embed.description := str
 		}
 
 		setContent(byref str) {
@@ -810,6 +821,18 @@ class Discord {
 		}
 	}
 
+	class messageDeleteBulk {
+		__New(api, data) {
+			this.api := api
+			for key, value in data {
+				this[key] := value
+			}
+			this.count := data.ids.length()
+			this.guild := new discord.guild(api, data.guild_id)
+			this.channel := new discord.channel(api, data.channel_id, this.guild)
+		}
+	}
+
 	class guild {
 		__New(api, id) {
 			this.api := api
@@ -918,6 +941,8 @@ class Discord {
 		__New(api, data) {
 			this.api := api
 			this.guild := new discord.guild(api, data.guild_id)
+			if !this.guild
+				return
 			for key, value in data {
 				this[key] := value
 			}
@@ -1095,11 +1120,14 @@ class Discord {
 
 	class message {
 		__New(api, data) {
+			static messageLink := "https://discord.com/channels/{}/{}/{}"
 			this.id := data.id
 			this.api := api
 			for key, value in data {
 				this[key] := value
 			}
+
+			this.link := format(messageLink, data.guild_id, data.channel_id, data.id)
 
 			if data.guild_id {
 				this.guild := new discord.guild(api, data.guild_id)

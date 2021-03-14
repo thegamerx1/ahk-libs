@@ -210,6 +210,11 @@ StartsWith(str, start) {
 	return SubStr(str, 1, StrLen(start)) = start
 }
 
+Miss2Text(miss) {
+	FormatTime time, % miss, yyyy MMMM dddd HH:mm
+	return time
+}
+
 ;https://autohotkey.com/board/topic/80587-how-to-find-internet-connection-status/
 ConnectedToInternet(flag=0x40) {
 	Return DllCall("Wininet.dll\InternetGetConnectedState", "Str", flag, "Int", 0)
