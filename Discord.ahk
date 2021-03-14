@@ -16,7 +16,8 @@ class Discord {
 					,9: "InvalidSession"
 					,10: "Hello"
 					,11: "HeartbeatACK"}
-	reconnects := 0
+
+	reconnects := identifies := 0
 
 	__New(parent, token, intents, owner_guild := "", owner_id := "", isDebug := true) {
 		;; ? owner guild is required for checking when the bot has loaded the owner's guild so it can use those emotes at start
@@ -29,7 +30,15 @@ class Discord {
 		this.owner := {guild: owner_guild, id: owner_id}
 		this.creator := parent
 		this.ratelimit := {}
-		this.connect()
+		if this.connect()
+			throw Exception("invalid token")
+		OnError(ObjBindMethod(this, "handleError", -1))
+	}
+
+	handleError(e) {
+		if (e.what = "DISCORDAHK_CALLAPI") {
+			this.log("Request failed: " httpout.text, "WARNING")
+		}
 	}
 
 	setResume(sessionid, seq) {
@@ -211,13 +220,14 @@ class Discord {
 			if !this.msg[channel]
 				this.msg[channel] := {}
 
+			if !data.guild_id
+				data.guild_id := this.findChannelGuild(channel)
+			data.edits := []
 			this.msg[channel][data.id] := data
 		}
 
 		messageGet(channel, id) {
-			msg := this.msg[channel][id]
-			msg.guild_id := this.findChannelGuild(channel)
-			return msg
+			return this.msg[channel][id]
 		}
 
 		emojiGet(guild, name) {
@@ -355,10 +365,9 @@ class Discord {
 		}
 
 		; * Request was unsuccessful
-		if !StartsWith(httpout.status, 20) {
-			this.log("Request failed: " httpout.text, "WARNING")
-			; throw Exception(httpjson.message, -2, httpjson.code)
-		}
+		if !StartsWith(httpout.status, 20)
+			throw Exception(httpjson.message, "DISCORDAHK_CALLAPI", httpjson.code)
+
 		return httpjson
 	}
 
@@ -449,6 +458,7 @@ class Discord {
 				large_threshold: 250
 			}
 		)})
+		this.identifies++
 	}
 
 	resume() {
@@ -476,22 +486,33 @@ class Discord {
 	}
 
 	OP_INVALIDSESSION(Data) {
-		this.log("[SESSION] Attempting to identify to discord api")
+		this.log(".[SESSION] Attempting to identify to discord api")
 		TimeOnce(ObjBindMethod(this, "identify"), random(1000, 4000))
 	}
 
 	OP_Dispatch(Data) {
+		output := false
 		switch data.t {
+			case "MESSAGE_UPDATE":
+				if !data.d.author
+					return
+				msg := this.cache.messageGet(data.d.channel_id, data.d.id)
+				edits := clone(msg.edits)
+				edits.InsertAt(1, msg)
+				this.cache.messageSet(data.d.channel_id, data.d)
+				msg := this.cache.messageGet(data.d.channel_id, data.d.id)
+				msg.edits := edits
+				output := new discord.message(this, Data.d)
 			case "MESSAGE_CREATE":
 				this.cache.messageSet(data.d.channel_id, data.d)
 				if data.d.author.id = this.self.id
 					return ;; ? Ignore own messages
 
-				Data.d := new discord.message(this, Data.d)
+				output := new discord.message(this, Data.d)
 			case "MESSAGE_REACTION_ADD":
 				if data.d.user_id == this.self.user_id
 					return
-				data.d := new this.reaction(this, data.d)
+				output := new this.reaction(this, data.d)
 
 			case "MESSAGE_DELETE":
 				msg := this.cache.messageGet(data.channel_id, data.id)
@@ -522,7 +543,7 @@ class Discord {
 				this.cache.emojiUpdate(data.d.guild_id, data.d.emojis)
 
 			case "INTERACTION_CREATE":
-				data.d := new this.interaction(this, data.d)
+				output := new this.interaction(this, data.d)
 
 			case "GUILD_ROLE_CREATE":
 				this.cache.roleCreate(data.d.guild_id, data.d.role)
@@ -549,7 +570,7 @@ class Discord {
 				this.cache.channelDelete(data.d.guild_id, data.d.id)
 		}
 
-		this.dispatch(data.t, data.d)
+		this.dispatch(data.t, output ? output : data.d)
 	}
 
 	dispatch(event, data) {
@@ -582,7 +603,7 @@ class Discord {
 
 
 	OnClose(reason := "", code := "") {
-		static allowed := [1000, 1001, 4000, 4007, 4009]
+		static allowed := [1000, 1001, 4000, 4005, 4007, 4009]
 		this.log(format("Closed, {}: {}", code, reason), "INFO")
 		if !contains(code, allowed)
 			Throw Exception("Discord closed with an error")
@@ -867,7 +888,7 @@ class Discord {
 
 		findChannel(name) {
 			for i, channel in this.channels {
-				if (channel.id = name || strDiff(channel.name, name) > 0.8) {
+				if (channel.id = name || channel.name = name || strDiff(channel.name, name) > 0.7) {
 					return channel.id
 				}
 			}
@@ -915,6 +936,7 @@ class Discord {
 			for key, value in channel {
 				this[key] := value
 			}
+			this.mention := "<#" this.id ">"
 			this.guild := guild
 			this.permissions := discord.calcPermissions(this.guild, this, guild.getMember(api.self.id))
 		}
@@ -1071,8 +1093,10 @@ class Discord {
 		__New(api, data) {
 			this.id := data.id
 			this.api := api
-			this.message := data.content
-			this.embeds := data.embeds
+			for key, value in data {
+				this[key] := value
+			}
+
 			if data.guild_id {
 				this.guild := new discord.guild(api, data.guild_id)
 			}
@@ -1082,7 +1106,8 @@ class Discord {
 				this.author := new discord.author(api, data.author, this.guild, this.channel)
 				if data.referenced_message {
 					data.referenced_message.guild_id := data.guild_id
-					this.referenced_msg := new discord.message(api, data.referenced_message)
+					msg := api.cache.messageGet(data.channel_id, data.referenced_message.id)
+					this.reply_msg := new discord.message(api, msg ? msg : data.referenced_message)
 				}
 			}
 		}
