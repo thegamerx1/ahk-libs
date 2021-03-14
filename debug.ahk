@@ -28,7 +28,7 @@ class Debug {
 	}
 
 	error(e) {
-		this.print("Unhandled error: ")
+		this.print(CallStack(4))
 		this.print(e)
 	}
 

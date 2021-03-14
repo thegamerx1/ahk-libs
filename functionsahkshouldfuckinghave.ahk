@@ -2,11 +2,15 @@ Between(byref num, byref min, byref max) {
 	return (num > max || num < min)
 }
 
-Array2String(array, delimiter := " ") {
+Array2String(array, delimiter := " ", wrap := "") {
 	out := ""
 	for _, v in array
-		out .= (out ? delimiter : "") v
+		out .= (out ? delimiter : "") wrap v wrap
 	return out
+}
+
+strip(str, del) {
+	return regex(str, "^(" del ")*(?<text>.*)(" del ")*$").text
 }
 
 Truncate(str, limit, ending := "..") {
@@ -16,6 +20,10 @@ Truncate(str, limit, ending := "..") {
 		return SubStr(str, 0, limit-lenEnd) ending
 	}
 	return str
+}
+
+ifNull(var, default) {
+	return var ? var : default
 }
 
 getLast(str) {
@@ -301,4 +309,23 @@ eval(str, context := "") {
 FileRead(file) {
 	FileRead out, %file%
 	return out
+}
+
+
+
+;; https://autohotkey.com/board/topic/76062-ahk-l-how-to-get-callstack-solution/
+CallStack(deepness := 5, printLines := 1) {
+	stack := ""
+	loop % deepness
+	{
+		lvl := -2 - deepness + A_Index
+		oEx := Exception("", lvl)
+		oExPrev := Exception("", lvl - 1)
+		FileReadLine, line, % oEx.file, % oEx.line
+		if(oEx.What = lvl)
+			continue
+		line := "	-> " strip(line, "\s")
+		stack .= "File """ oEx.file """, Line " oEx.line (oExPrev.What = lvl-1 ? "" : ", in " oExPrev.What "()") (printLines ? ":`n" line : "") "`n"
+	}
+	return stack
 }
