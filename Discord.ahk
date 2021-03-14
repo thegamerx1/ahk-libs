@@ -157,8 +157,9 @@ class Discord {
 			if (index := this.memberGet(guild, member.user.id))
 				return this.memberUpdate(guild, member.user.id, member)
 
-			newm := this.guild[guild].members.InsertAt(1, member)
-			newm.roles.push(guild)
+			members := this.guild[guild].members
+			members.InsertAt(1, member)
+			members[1].roles.push(guild)
 		}
 
 		guildSet(guild, data) {
@@ -317,6 +318,7 @@ class Discord {
 	}
 
 	CallAPI(method, endpoint, data := "", async := false) {
+		static loggyFormat := "[{}:{}] [{}ms] {}"
 		static BaseURL := "https://discord.com/api/"
 		http := new requests(method, BaseURL endpoint,, async)
 		count := new Counter(, true)
@@ -331,7 +333,7 @@ class Discord {
 
 			http.headers["User-Agent"] := "Discord.ahk"
 			httpout := http.send(data)
-			this.log("." format("[{}:{}] [{}ms] {}", method, httpout.status, count.get(), endpoint))
+			this.log("." format(loggyFormat, method, httpout.status, count.get(), endpoint))
 			httpjson := httpout.json()
 			; TODO: ratelimit
 			; this.ratelimit.bucket := httpout.headers["x-ratelimit-bucket"]
@@ -355,7 +357,7 @@ class Discord {
 		; * Request was unsuccessful
 		if !StartsWith(httpout.status, 20) {
 			this.log("Request failed: " httpout.text, "WARNING")
-			throw Exception(httpjson.message, -2, httpjson.code)
+			; throw Exception(httpjson.message, -2, httpjson.code)
 		}
 		return httpjson
 	}
@@ -531,10 +533,13 @@ class Discord {
 
 			case "GUILD_MEMBER_UPDATE":
 				this.cache.memberUpdate(data.d.guild_id, data.d.user.id, data.d)
+				data.d := new discord.memberAction(this, data.d)
 			case "GUILD_MEMBER_REMOVE":
+				data.d := new discord.memberAction(this, data.d)
 				this.cache.memberDelete(data.d.guild_id, data.d.user.id)
 			case "GUILD_MEMBER_ADD":
-				this.cache.memberSet(data.d.guild_id, data.d.user)
+				this.cache.memberSet(data.d.guild_id, data.d)
+				data.d := new discord.memberAction(this, data.d)
 
 			case "CHANNEL_UPDATE":
 				this.cache.channelUpdate(data.d.guild_id, data.d.id, data.d)
@@ -687,11 +692,49 @@ class Discord {
 		}
 	}
 
-	class author {
+	calcPermissions(guild, channel, member) {
 		static permissionlist := {ADD_REACTIONS: 0x00000040, ADMINISTRATOR: 0x00000008, ATTACH_FILES: 0x00008000, BAN_MEMBERS: 0x00000004, CHANGE_NICKNAME: 0x04000000, CONNECT: 0x00100000, CREATE_INSTANT_INVITE: 0x00000001, DEAFEN_MEMBERS: 0x00800000, EMBED_LINKS: 0x00004000, KICK_MEMBERS: 0x00000002, MANAGE_CHANNELS: 0x00000010, MANAGE_EMOJIS: 0x40000000, MANAGE_GUILD: 0x00000020, MANAGE_MESSAGES: 0x00002000, MANAGE_NICKNAMES: 0x08000000, MANAGE_ROLES: 0x10000000, MANAGE_WEBHOOKS: 0x20000000, MENTION_EVERYONE: 0x00020000, MOVE_MEMBERS: 0x01000000, MUTE_MEMBERS: 0x00400000, PRIORITY_SPEAKER: 0x00000100, READ_MESSAGE_HISTORY: 0x00010000, SEND_MESSAGES: 0x00000800, SEND_TTS_MESSAGES: 0x00001000, SPEAK: 0x00200000, STREAM: 0x00000200, USE_EXTERNAL_EMOJIS: 0x00040000, USE_VAD: 0x02000000, VIEW_AUDIT_LOG: 0x00000080, VIEW_CHANNEL: 0x00000400, VIEW_GUILD_INSIGHTS: 0x00080000}
+		perms := allow := deny := 0, done := false
+		permissions := []
 
+		for _, value in member.roles {
+			role := guild.getRole(value)
+			perms |= role.permissions
+		}
+
+		if (discord.checkFlag(perms, permissionlist["ADMINISTRATOR"]) || (member.user.id = guild.owner_id)) {
+			for key, _ in permissionlist {
+				permissions.push(key)
+			}
+			done := true
+		}
+
+		if !done {
+			for _, value in member.roles {
+				overwrite := channel.getOverwrite(value)
+				if overwrite {
+					allow |= overwrite.allow
+					deny |= overwrite.deny
+				}
+			}
+			perms &= ~deny
+			perms |= allow
+			for key, flag in permissionlist
+				if discord.checkFlag(perms, flag)
+					permissions.push(key)
+		}
+
+		return permissions
+	}
+
+	checkFlag(perms, flag) {
+		return (perms & flag) == flag
+	}
+
+	class author {
 		__New(api, data, guild := "", channel := "") {
 			static avatar := "https://cdn.discordapp.com/avatars/{}/{}.webp?size=1024"
+			static noavatar := "https://cdn.discordapp.com/embed/avatars/{}.png"
 			this.api := api
 			for key, value in data {
 				this[key] := value
@@ -700,56 +743,22 @@ class Discord {
 			this.guild := guild
 			this.channel := channel
 			this.mention := "<@" data.id ">"
-			this.notMention := this.username "@" this.discriminator
-			this.avatar := format(avatar, this.id, this.avatar)
-			this.permissions := []
+			this.notMention := this.username "#" this.discriminator
+			this.avatar := this.avatar ? format(avatar, this.id, this.avatar) : format(noavatar, mod(this.discriminator, 5))
 			this.isGuildOwner := (this.id = guild.owner_id)
 			this.isBotOwner := (this.id = api.owner.id)
-			if !guild {
-				try {
-					throw Exception("", -3)
-				} catch e {
-					this.api.log(e.what " did not provide a guild", "WARNING")
-				}
-			}
-			if !channel {
-				try {
-					throw Exception("", -3)
-				} catch e {
-					this.api.log(e.what " did not provide a channel", "WARNING")
-				}
-			}
+
+			if !guild
+				this.api.log("`n" callstack(3) "did not provide a guild", "WARNING")
 
 			if guild {
 				member := guild.getMember(this.id)
 				this.roles := member.roles
-
-				perms := allow := deny := 0
-				for _, value in this.roles {
-					index := api.cache.roleGet(guild.id, value)
-					role := guild.roles[index]
-					perms |= role.permissions
-				}
-				if (this.checkFlag(perms, this.permissionlist["ADMINISTRATOR"]) || this.isGuildOwner) {
-					for key, _ in this.permissionlist {
-						this.permissions.push(key)
-					}
-					return this
-				}
-				for _, value in this.roles {
-					overwrite := channel.getOverwrite(value)
-					if overwrite {
-						allow |= overwrite.allow
-						deny |= overwrite.deny
-					}
-				}
-				perms &= ~deny
-				perms |= allow
-				for key, flag in this.permissionlist {
-					if this.checkFlag(perms, flag)
-						this.permissions.push(key)
+				if channel {
+					this.permissions := discord.calcPermissions(guild, channel, member)
 				}
 			}
+
 		}
 
 		sendDM(content) {
@@ -759,10 +768,6 @@ class Discord {
 
 		get(userid) {
 			return new discord.author(this.api, this.api.getUser(userid), this.guild, this.channel)
-		}
-
-		checkFlag(perms, flag) {
-			return (perms & flag) == flag
 		}
 
 		modify(json) {
@@ -788,6 +793,9 @@ class Discord {
 		__New(api, id) {
 			this.api := api
 			guild := api.cache.guild[id]
+			if !guild
+				throw Exception("No guild could be found", id)
+
 			for key, value in guild {
 				this[key] := value
 			}
@@ -819,13 +827,16 @@ class Discord {
 		}
 
 		getMember(id) {
-			if !this.api.cache.memberGet(this.id, id)
-				this.api.cache.memberSet(this.id, this.api.CallAPI("GET", "guilds/" this.id "/members/" id))
+			; if !this.api.cache.memberGet(this.id, id) {
+			; 	if dontRequest
+			; 		return
+			; 	this.api.cache.memberSet(this.id, this.api.CallAPI("GET", "guilds/" this.id "/members/" id))
+			; }
 			return this.members[this.api.cache.memberGet(this.id, id)]
 		}
 
 		getRole(id) {
-			return this.roles[this.cache.role(this.id, id)]
+			return this.roles[this.api.cache.roleGet(this.id, id)]
 		}
 
 		modify(json) {
@@ -853,6 +864,14 @@ class Discord {
 		role(user, id, addremove := 1) {
 			return this.api.CallAPI(addremove ? "PUT" : "DELETE", "guilds/" this.id "/members/" user "/roles/" id)
 		}
+
+		findChannel(name) {
+			for i, channel in this.channels {
+				if (channel.id = name || strDiff(channel.name, name) > 0.8) {
+					return channel.id
+				}
+			}
+		}
 	}
 
 	class reaction {
@@ -874,6 +893,17 @@ class Discord {
 		}
 	}
 
+	class memberAction {
+		__New(api, data) {
+			this.api := api
+			this.guild := new discord.guild(api, data.guild_id)
+			for key, value in data {
+				this[key] := value
+			}
+			this.user := new discord.author(api, data.user, this.guild)
+		}
+	}
+
 	class channel {
 		; TODO: Edit Channel perms,
 		__New(api, id, guild := "") {
@@ -886,6 +916,7 @@ class Discord {
 				this[key] := value
 			}
 			this.guild := guild
+			this.permissions := discord.calcPermissions(this.guild, this, guild.getMember(api.self.id))
 		}
 
 		modify(json) {
@@ -895,6 +926,14 @@ class Discord {
 
 		delete() {
 			return this.api.CallAPI("DELETE", "channels/" this.id)
+		}
+
+		canI(perms := "") {
+			for _, perm in perms {
+				if !contains(perm, this.permissions)
+					return 0
+			}
+			return 1
 		}
 
 		getOverwrite(id) {
@@ -1040,7 +1079,6 @@ class Discord {
 			this.channel := new discord.channel(api, data.channel_id, this.guild)
 			this.timestamp := discord.utils.ISODATE(data.timestamp)
 			if !data.webhook_id {
-				this.self := new discord.author(api, api.self, this.guild, this.channel)
 				this.author := new discord.author(api, data.author, this.guild, this.channel)
 				if data.referenced_message {
 					data.referenced_message.guild_id := data.guild_id
