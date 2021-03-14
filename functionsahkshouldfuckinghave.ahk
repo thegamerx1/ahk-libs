@@ -112,7 +112,7 @@ niceDate(ms) {
 	out := ""
 	for _, value in values {
 		if (%value% > 0)
-			out .= %value% SubStr(value, 1,1) " "
+			out .= (out ? " " : "") %value% SubStr(value, 1,1)
 	}
 	return out
 }
@@ -290,8 +290,13 @@ eval(str, context := "") {
 	}
 
 	; ? global class
-	if !IsObject(obj)
-		obj := %obj%
+	if !IsObject(obj) {
+		try {
+			obj := %obj%
+		} catch e {
+			return "global object not found"
+		}
+	}
 
 
 	; ? query
