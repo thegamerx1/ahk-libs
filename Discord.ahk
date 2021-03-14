@@ -815,7 +815,7 @@ class Discord {
 			this.api := api
 			guild := api.cache.guild[id]
 			if !guild
-				throw Exception("No guild could be found", id)
+				return
 
 			for key, value in guild {
 				this[key] := value
@@ -930,9 +930,13 @@ class Discord {
 		__New(api, id, guild := "") {
 			if !guild
 				guild := new discord.guild(api, api.cache.findChannelGuild(id))
+			if !guild
+				return
 			this.api := api
 			index := api.cache.channelGet(guild.id, id)
 			channel := guild.channels[index]
+			if !channel
+				return
 			for key, value in channel {
 				this[key] := value
 			}
