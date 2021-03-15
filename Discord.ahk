@@ -642,8 +642,8 @@ class Discord {
 	}
 
 	class embed {
-		__New(title := "", content := "", color := "0x159af3") {
-			static colors := [{name: "error", value: 0xAC3939}, {name: "success", value: 0x65C85B}]
+		__New(title := "", content := "", color := "blue") {
+			static colors := [{name: "error", value: 0xAC3939}, {name: "success", value: 0x65C85B}, {name: "blue", value: 0x159af3}]
 			for _, val in colors {
 				if val.name = color
 					color := val.value
@@ -1019,7 +1019,7 @@ class Discord {
 		}
 
 		getMessages(opt) {
-			return this.api.CallAPI("GET", "channels/" this.id "/messages?" requests.encode(opt))
+			return this.api.CallAPI("GET", "channels/" this.id "/messages?" urlCode.encodeParams(opt))
 		}
 
 		send(content) {
@@ -1035,12 +1035,12 @@ class Discord {
 
 		reaction(id, emoji, addremove := 1) {
 			emoji := this.api.utils.convertEmoji(emoji)
-			return this.api.CallAPI(addremove ? "PUT" : "DELETE", "channels/" this.id "/messages/" id "/reactions/" urlEncode(emoji) "/@me")
+			return this.api.CallAPI(addremove ? "PUT" : "DELETE", "channels/" this.id "/messages/" id "/reactions/" urlCode.encode(emoji) "/@me")
 		}
 
 		getReactions(id, emoji, opt) {
 			emoji := this.api.utils.convertEmoji(emoji)
-			this.api.CallAPI("GET", "channels/" this.id "/messages/" id "/reactions/" emoji "?" requests.encode(opt))
+			this.api.CallAPI("GET", "channels/" this.id "/messages/" id "/reactions/" emoji "?" rurlCode.encodeParams(opt))
 		}
 
 		deleteAllReactions(id) {
@@ -1187,5 +1187,12 @@ class Discord {
 		unPin() {
 			this.channel.pin(this.id, 0)
 		}
+	}
+}
+
+
+class DiscordOauth {
+	__New(client) {
+
 	}
 }
