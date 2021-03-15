@@ -9,6 +9,10 @@ Array2String(array, delimiter := " ", wrap := "") {
 	return out
 }
 
+SplitLine(byref str, max := -1) {
+	return StrSplit(str, "`n", "`r", max)
+}
+
 strip(str, del) {
 	return regex(str, "^(" del ")*(?<text>.*)(" del ")*$").text
 }

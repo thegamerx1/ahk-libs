@@ -6,11 +6,7 @@ class requests {
 		this.headers := {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"}
 		this.cookies := {}
 		this.allowredirect := false
-		out := ""
-		for key, value in params {
-			out .= (out ? "&" : "?") key "=" value
-		}
-		this.url .= out
+		this.url .= urlCode.encodeParams(params)
 		this.async := async
 		this.timeout := 2
  	}
@@ -56,14 +52,6 @@ class requests {
 			debug.print(e)
 		}
 	}
-
-	encode(obj) {
-		out := ""
-		for key, value in obj {
-			out .= (out ? "&" : "") key "=" UrlEncode(value)
-		}
-		return out
-	}
 }
 
 class requests_response {
@@ -74,11 +62,7 @@ class requests_response {
 		this.statusText := com.statusText
 		this.text := com.responseText
 		this.headers := {}
-		headers := StrSplit(com.GetAllResponseHeaders(), "`n", "`r")
-		for key, value in headers {
-			keys := StrSplit(value, ":", " ", 2)
-			this.headers[keys[1]] := keys[2]
-		}
+		headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
 		this.url := request.async ? com.getOption(-1) : com.Option(1)
 	}
 
