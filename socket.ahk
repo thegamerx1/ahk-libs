@@ -7,8 +7,8 @@ class Socket
 
 	__New(Socket:=-1)
 	{
-		static Init
-		if (!Init)
+		static init := false
+		if !init
 		{
 			DllCall("LoadLibrary", "Str", "Ws2_32", "Ptr")
 			VarSetCapacity(WSAData, 394+A_PtrSize)
@@ -16,7 +16,7 @@ class Socket
 				throw Exception("Error starting Winsock",, Error)
 			if (NumGet(WSAData, 2, "UShort") != 0x0202)
 				throw Exception("Winsock version 2.2 not available")
-			Init := True
+			init := True
 		}
 		this.Socket := Socket
 	}
@@ -110,7 +110,7 @@ class Socket
 	MsgSize()
 	{
 		static FIONREAD := 0x4004667F
-		if (DllCall("Ws2_32\ioctlsocket", "UInt", this.Socket, "UInt", FIONREAD, "UInt*", argp) == -1)
+		if (DllCall("Ws2_32\ioctlsocket", "UInt", this.Socket, "UInt", FIONREAD, "UInt*", argp := "") == -1)
 			throw Exception("Error calling ioctlsocket",, this.GetLastError())
 		return argp
 	}
@@ -171,7 +171,7 @@ class Socket
 		VarSetCapacity(Hints, 16+(4*A_PtrSize), 0)
 		NumPut(this.SocketType, Hints, 8, "Int")
 		NumPut(this.ProtocolId, Hints, 12, "Int")
-		if (Error := DllCall("Ws2_32\getaddrinfo", "AStr", Host, "AStr", Port, "Ptr", &Hints, "Ptr*", Result))
+		if (Error := DllCall("Ws2_32\getaddrinfo", "AStr", Host, "AStr", Port, "Ptr", &Hints, "Ptr*", Result := ""))
 			throw Exception("Error calling GetAddrInfo",, Error)
 		return Result
 	}

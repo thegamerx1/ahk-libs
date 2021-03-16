@@ -4,6 +4,7 @@
 #include <requests>
 
 class Discord {
+	static permissionList := {ADD_REACTIONS: 0x00000040, ADMINISTRATOR: 0x00000008, ATTACH_FILES: 0x00008000, BAN_MEMBERS: 0x00000004, CHANGE_NICKNAME: 0x04000000, CONNECT: 0x00100000, CREATE_INSTANT_INVITE: 0x00000001, DEAFEN_MEMBERS: 0x00800000, EMBED_LINKS: 0x00004000, KICK_MEMBERS: 0x00000002, MANAGE_CHANNELS: 0x00000010, MANAGE_EMOJIS: 0x40000000, MANAGE_GUILD: 0x00000020, MANAGE_MESSAGES: 0x00002000, MANAGE_NICKNAMES: 0x08000000, MANAGE_ROLES: 0x10000000, MANAGE_WEBHOOKS: 0x20000000, MENTION_EVERYONE: 0x00020000, MOVE_MEMBERS: 0x01000000, MUTE_MEMBERS: 0x00400000, PRIORITY_SPEAKER: 0x00000100, READ_MESSAGE_HISTORY: 0x00010000, SEND_MESSAGES: 0x00000800, SEND_TTS_MESSAGES: 0x00001000, SPEAK: 0x00200000, STREAM: 0x00000200, USE_EXTERNAL_EMOJIS: 0x00040000, USE_VAD: 0x02000000, VIEW_AUDIT_LOG: 0x00000080, VIEW_CHANNEL: 0x00000400, VIEW_GUILD_INSIGHTS: 0x00080000}
 	static baseapi := "https://discord.com/api/v8/"
 	static OPCode := {0: "Dispatch"
 					,1: "Heartbeat"
@@ -725,7 +726,6 @@ class Discord {
 	}
 
 	calcPermissions(guild, channel, member) {
-		static permissionlist := {ADD_REACTIONS: 0x00000040, ADMINISTRATOR: 0x00000008, ATTACH_FILES: 0x00008000, BAN_MEMBERS: 0x00000004, CHANGE_NICKNAME: 0x04000000, CONNECT: 0x00100000, CREATE_INSTANT_INVITE: 0x00000001, DEAFEN_MEMBERS: 0x00800000, EMBED_LINKS: 0x00004000, KICK_MEMBERS: 0x00000002, MANAGE_CHANNELS: 0x00000010, MANAGE_EMOJIS: 0x40000000, MANAGE_GUILD: 0x00000020, MANAGE_MESSAGES: 0x00002000, MANAGE_NICKNAMES: 0x08000000, MANAGE_ROLES: 0x10000000, MANAGE_WEBHOOKS: 0x20000000, MENTION_EVERYONE: 0x00020000, MOVE_MEMBERS: 0x01000000, MUTE_MEMBERS: 0x00400000, PRIORITY_SPEAKER: 0x00000100, READ_MESSAGE_HISTORY: 0x00010000, SEND_MESSAGES: 0x00000800, SEND_TTS_MESSAGES: 0x00001000, SPEAK: 0x00200000, STREAM: 0x00000200, USE_EXTERNAL_EMOJIS: 0x00040000, USE_VAD: 0x02000000, VIEW_AUDIT_LOG: 0x00000080, VIEW_CHANNEL: 0x00000400, VIEW_GUILD_INSIGHTS: 0x00080000}
 		perms := allow := deny := 0, done := false
 		permissions := []
 
@@ -734,8 +734,8 @@ class Discord {
 			perms |= role.permissions
 		}
 
-		if (discord.checkFlag(perms, permissionlist["ADMINISTRATOR"]) || (member.user.id = guild.owner_id)) {
-			for key, _ in permissionlist {
+		if (discord.checkFlag(perms, Discord.permissionList["ADMINISTRATOR"]) || (member.user.id = guild.owner_id)) {
+			for key, _ in Discord.permissionList {
 				permissions.push(key)
 			}
 			done := true
@@ -751,15 +751,17 @@ class Discord {
 			}
 			perms &= ~deny
 			perms |= allow
-			for key, flag in permissionlist
-				if discord.checkFlag(perms, flag)
+			for key, flag in Discord.permissionList
+				if discord.checkFlag(key, flag)
 					permissions.push(key)
 		}
 
 		return permissions
 	}
 
-	checkFlag(perms, flag) {
+	checkFlag(perms, name) {
+		if !(flag := Discord.permissionList[name])
+			Throw Exception("Flag not found!", -2, name)
 		return (perms & flag) == flag
 	}
 
@@ -1193,10 +1195,12 @@ class Discord {
 
 class DiscordOauth {
 	__New(clientid, secret, redirect, scopes) {
+		static link := "https://discord.com/api/oauth2/authorize?response_type=code&client_id={}&scope={}&redirect_uri={}"
 		this.id := clientid
 		this.secret := secret
 		this.redirect := redirect
 		this.scopes := scopes
+		this.link := format(link, clientid, scopes, redirect)
 	}
 
 	getCode(code) {
@@ -1219,23 +1223,39 @@ class DiscordOauth {
 		return http.send(urlCode.encodeParams(data, true))
 	}
 
-	apiRequest(endpoint, token) {
-		http := new requests("GET", Discord.baseapi endpoint)
-		http.headers["Authorization"] := "Bearer " token.token
-		return http.send()
-	}
 	class AccessToken {
 		__New(oauth, raw) {
+			this.cache := {}
 			data := JSON.load(raw)
 			this.token := data.access_token
 			this.type := data.token_type
 			this.expires_in := data.expires_in
+			this.created := new counter(, true)
 			this.refresh_token := data.refresh_token
 			this.oauth := oauth
 		}
 
 		refresh() {
 			http := new requests("POST", Discord.baseapi "oauth2/token")
+		}
+
+		valid() {
+			return (this.created.get()//1000 < this.expires_in)
+		}
+
+		request(endpoint) {
+			static expire := 15*1000
+			if this.cache[endpoint].expires > A_TickCount
+				return this.cache[endpoint].data
+			http := new requests("GET", Discord.baseapi endpoint)
+			http.headers["Authorization"] := "Bearer " this.token
+			http.headers["User-agent"] := "Discord.ahk"
+			out := http.send()
+			if !StartsWith(20, out.status) {
+				this.cache[endpoint] := {expires: A_TickCount + expire, data: out.json()}
+				return this.cache[endpoint].data
+			}
+			throw Exception("Error", -2, out.status)
 		}
 	}
 }
