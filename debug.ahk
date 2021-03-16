@@ -133,7 +133,6 @@ class Debug {
 		if isAction
 			return
 
-
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
 
