@@ -50,7 +50,9 @@ class WebSocket {
 
 	; Closes the WebSocket connection
 	Close(Code:=1000, Reason:="") {
-		this.wnd.ws.close(Code, Reason)
+		try {
+			this.wnd.ws.close(Code, Reason)
+		}
 	}
 
 	; Closes and deletes the WebSocket, removing
