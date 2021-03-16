@@ -4,6 +4,7 @@
 #include <requests>
 
 class Discord {
+	static baseapi := "https://discord.com/api/v8/"
 	static OPCode := {0: "Dispatch"
 					,1: "Heartbeat"
 					,2: "Identify"
@@ -330,8 +331,7 @@ class Discord {
 
 	CallAPI(method, endpoint, data := "", async := false) {
 		static loggyFormat := "[{}:{}] [{}ms] {}"
-		static BaseURL := "https://discord.com/api/"
-		http := new requests(method, BaseURL endpoint,, async)
+		http := new requests(method, Discord.baseapi endpoint,, async)
 		count := new Counter(, true)
 		; ? Try the request multiple times if necessary
 		Loop 2 {
@@ -375,7 +375,7 @@ class Discord {
 	; ? Sends data through the websocket
 	Send(Data) {
 		if (this.reconnecting || !this.connected) {
-			this.log("Couldnt send", "ERROR")
+			this.log("Couldnt send " this.reconnecting " " this.connected, "ERROR")
 			this.log(data)
 		}
 		this.ws.send(JSON.dump(Data))
@@ -1192,7 +1192,50 @@ class Discord {
 
 
 class DiscordOauth {
-	__New(client) {
+	__New(clientid, secret, redirect, scopes) {
+		this.id := clientid
+		this.secret := secret
+		this.redirect := redirect
+		this.scopes := scopes
+	}
 
+	getCode(code) {
+		http := this.tokenRequest({grant_type: "authorization_code", code: code})
+
+		if http.status != 200
+			throw Exception("Auth failed code: " http.status, "Invalid code", http.text)
+		return new this.AccessToken(this, http.text)
+	}
+
+	tokenRequest(obj) {
+		http := new requests("POST", Discord.baseapi "oauth2/token")
+		data := {client_id: this.id
+		,client_secret: this.secret
+		,redirect_uri: this.redirect
+		,scope: this.scopes}
+
+		data := ObjectMerge(obj, data)
+		http.headers["Content-type"] := "application/x-www-form-urlencoded"
+		return http.send(urlCode.encodeParams(data, true))
+	}
+
+	apiRequest(endpoint, token) {
+		http := new requests("GET", Discord.baseapi endpoint)
+		http.headers["Authorization"] := "Bearer " token.token
+		return http.send()
+	}
+	class AccessToken {
+		__New(oauth, raw) {
+			data := JSON.load(raw)
+			this.token := data.access_token
+			this.type := data.token_type
+			this.expires_in := data.expires_in
+			this.refresh_token := data.refresh_token
+			this.oauth := oauth
+		}
+
+		refresh() {
+			http := new requests("POST", Discord.baseapi "oauth2/token")
+		}
 	}
 }
