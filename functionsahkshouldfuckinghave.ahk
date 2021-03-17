@@ -9,19 +9,29 @@ Array2String(array, delimiter := " ", wrap := "") {
 	return out
 }
 
+IsFile(file) {
+	exist := FileExist(file)
+	return (exist && !InStr("D", exist))
+}
+
+IsFolder(folder) {
+	exist := FileExist(folder)
+	return (exist && InStr("D", exist))
+}
+
 SplitLine(byref str, max := -1) {
 	return StrSplit(str, "`n", "`r", max)
 }
 
-strip(str, del) {
+strip(byref str, del) {
 	return regex(str, "^(" del ")*(?<text>.*)(" del ")*$").text
 }
 
-Truncate(str, limit, ending := "..") {
+Truncate(byref str, byref limit, byref ending := "..") {
 	lenEnd := StrLen(ending)
 	lenStr := StrLen(str)
 	if (lenStr > limit-lenEnd) {
-		return SubStr(str, 0, limit-lenEnd) ending
+		return SubStr(str, 1, limit-lenEnd) ending
 	}
 	return str
 }
