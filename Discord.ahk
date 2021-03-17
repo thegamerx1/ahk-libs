@@ -736,7 +736,7 @@ class Discord {
 			perms |= role.permissions
 		}
 
-		if (discord.checkFlag(perms, Discord.permissionList["ADMINISTRATOR"]) || (member.user.id = guild.owner_id)) {
+		if (discord.checkFlag(perms, "ADMINISTRATOR") || (member.user.id = guild.owner_id)) {
 			for key, _ in Discord.permissionList {
 				permissions.push(key)
 			}
@@ -754,7 +754,7 @@ class Discord {
 			perms &= ~deny
 			perms |= allow
 			for key, flag in Discord.permissionList
-				if discord.checkFlag(key, flag)
+				if discord.checkFlag(perms, key)
 					permissions.push(key)
 		}
 
