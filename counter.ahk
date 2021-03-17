@@ -29,7 +29,7 @@ class counter {
 	Get() {
 		if this.starttime {
 			time := A_TickCount - this.starttime
-			return time ? time : 10
+			return time ? time : 1
 		} else {
 			DllCall("QueryPerformanceCounter", "Int64*", after := 0)
 			Return Round((after - this.before) / this.freq * 1000, this.count)

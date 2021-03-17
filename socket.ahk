@@ -164,8 +164,7 @@ class Socket
 			return RTrim(this.RecvText(i, Flags, Encoding), "`r`n")
 	}
 
-	GetAddrInfo(Address)
-	{
+	GetAddrInfo(Address) {
 		; TODO: Use GetAddrInfoW
 		Host := Address[1], Port := Address[2]
 		VarSetCapacity(Hints, 16+(4*A_PtrSize), 0)
@@ -176,8 +175,7 @@ class Socket
 		return Result
 	}
 
-	OnMessage(wParam, lParam, Msg, hWnd)
-	{
+	OnMessage(wParam, lParam, Msg, hWnd) {
 		Critical
 		if (Msg != this.WM_SOCKET || wParam != this.Socket)
 			return
@@ -189,8 +187,7 @@ class Socket
 			this.EventProcUnregister(), this.OnDisconnect()
 	}
 
-	EventProcRegister(lEvent)
-	{
+	EventProcRegister(lEvent) {
 		this.AsyncSelect(lEvent)
 		if !this.Bound
 		{
@@ -199,8 +196,7 @@ class Socket
 		}
 	}
 
-	EventProcUnregister()
-	{
+	EventProcUnregister() {
 		this.AsyncSelect(0)
 		if this.Bound
 		{
@@ -209,8 +205,7 @@ class Socket
 		}
 	}
 
-	AsyncSelect(lEvent)
-	{
+	AsyncSelect(lEvent) {
 		if (DllCall("Ws2_32\WSAAsyncSelect"
 			, "UInt", this.Socket    ; s
 			, "Ptr", A_ScriptHwnd    ; hWnd
