@@ -1226,7 +1226,7 @@ class DiscordOauth {
 	}
 
 	class AccessToken {
-		__New(oauth, raw) {
+		__New(oauth, raw, cacheexpire := 60) {
 			this.cache := {}
 			data := JSON.load(raw)
 			this.token := data.access_token
@@ -1234,6 +1234,7 @@ class DiscordOauth {
 			this.expires_in := data.expires_in
 			this.created := new counter(, true)
 			this.refresh_token := data.refresh_token
+			this.cache_expire := cacheexpire*1000
 			this.oauth := oauth
 		}
 
@@ -1246,7 +1247,6 @@ class DiscordOauth {
 		}
 
 		request(endpoint) {
-			static expire := 15*1000
 			if this.cache[endpoint].expires > A_TickCount
 				return this.cache[endpoint].data
 			http := new requests("GET", Discord.baseapi endpoint)
@@ -1254,7 +1254,7 @@ class DiscordOauth {
 			http.headers["User-agent"] := "Discord.ahk"
 			out := http.send()
 			if !StartsWith(20, out.status) {
-				this.cache[endpoint] := {expires: A_TickCount + expire, data: out.json()}
+				this.cache[endpoint] := {expires: A_TickCount + this.cache_expire, data: out.json()}
 				return this.cache[endpoint].data
 			}
 			throw Exception("Error", -2, out.status)

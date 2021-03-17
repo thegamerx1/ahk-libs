@@ -14,7 +14,7 @@ class requests {
 	send(data := "") {
 		this.com := ComObjCreate(this.async ? "Msxml2.ServerXMLHTTP.6.0" : "WinHttp.WinHttpRequest.5.1")
 		try {
-			this.com.open(this.type, this.url, true)
+			this.com.open(this.type, this.url, this.async)
 		} catch e {
 			throw Exception("Couldn't open url", -1)
 		}
@@ -36,7 +36,6 @@ class requests {
 		this.com.send(data)
 
 		if !this.async {
-			this.com.WaitForResponse(this.timeout)
 			return new requests_response(this)
 		}
 	}
