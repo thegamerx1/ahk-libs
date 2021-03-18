@@ -205,7 +205,8 @@ class httpServer {
 		_generate() {
 			FormatTime date, %A_NowUTC%, ddd, d MMM yyyy HH:mm:ss GMT
 			this.headers["Date"] := date
-			this.headers["Cache-Control"] := "no-store"
+			if !this.headers["Cache-Control"]
+				this.headers["Cache-Control"] := "no-store"
 			this.headers["Set-Cookie"] := urlCode.dumpCookies(this.cookies)
 			this.headers["Content-Type"] := this.mime
 
@@ -217,7 +218,8 @@ class httpServer {
 		}
 
 		file(file, static := true) {
-			this.headers["Cache-Control"] := "max-age=300"
+			if static
+				this.headers["Cache-Control"] := "max-age=300"
 			this.setMime(file)
 			this.body := FileRead(file)
 			this.status := 200
