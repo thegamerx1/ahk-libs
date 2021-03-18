@@ -38,7 +38,7 @@ class urlCode {
 		split := StrSplit(str, "&")
 		for _, value in split {
 			spl := StrSplit(value, "=",, 2)
-			out[spl[1]] := spl[2]
+			out[spl[1]] := this.decode(spl[2])
 		}
 		return out
 	}
@@ -79,6 +79,25 @@ class urlCode {
 		out := ""
 		for key, value in obj {
 			out .= (out ? "; "  : "") key "=" value
+		}
+		return out
+	}
+
+	_parseFormHeaders(byref str) {
+		out := {}
+		headers := StrSplit(str, ";", " ")
+		name := this.parseCookies(headers[2]).name
+		return SubStr(name, 2, StrLen(name)-2)
+	}
+
+	parseForm(data, byref boundary) {
+		debug.print(data)
+		out := {}
+		while match := regex(data, boundary "\R(.*?)\R" boundary, "s") {
+			data := StrReplace(data, match.0, boundary)
+			parse := StrSplit(match.1, ["`n`n", "`r`n`r`n"],, 2)
+			name := urlCode._parseFormHeaders(parse[1])
+			out[name] := parse[2]
 		}
 		return out
 	}

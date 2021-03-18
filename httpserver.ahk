@@ -27,7 +27,7 @@ class httpServer {
 		}
 		if sessions
 			this.sessions := {}
-
+		this.debug := isDebug
 		this.log := debug.space("HTTP_SERV", isDebug)
 	}
 
@@ -71,7 +71,6 @@ class httpServer {
 		Sock := Server.Accept()
 		request := new httpserver.request(this, Sock.RecvText())
 		response := new httpserver.response(this, sock, request)
-		this.log(request.path)
 
 		rPath := StrSplit(request.path, "/")
 		for _, path in this.paths {
@@ -108,8 +107,7 @@ class httpServer {
 			if !IsFile(path)
 				return response.error(404)
 			try {
-				response.setMime(path)
-				response.send(this.getFile(path))
+				response.file(path)
 			} catch e {
 				debug.print(e)
 			}
@@ -121,14 +119,19 @@ class httpServer {
 
 	class request {
 		__New(httpserv, byref data) {
-			data := StrSplit(data, "`n`n")
+			data := StrSplit(data, ["`n`n", "`r`n`r`n"],, 2)
 			headers := SplitLine(data[1], 2)
-			this.body := data[2]
 
 			this.GetPathInfo(headers[1])
 			this.get := urlCode.decodeParams(this.query)
 			this.params := {}
 			this.headers := urlCode.parseHeaders(headers[2])
+			if InStr(this.headers["Content-Type"], "form-data") {
+				boundary := "--" urlCode.parseCookies(this.headers["Content-Type"]).boundary
+				this.form := urlCode.parseForm(data[2], boundary)
+			} else if (inStr(this.headers["Content-Type"], "x-www-form-urlencoded")) {
+				this.form := urlCode.decodeParams(data[2])
+			}
 			this.cookies := urlCode.parseCookies(this.headers["Cookie"])
 			; httpserv.log(".received " this.cookies["session"])
 			if httpserv.sessions {
@@ -200,17 +203,25 @@ class httpServer {
 		}
 
 		_generate() {
-			if !this.headers["Date"] {
-				FormatTime date,, ddd, d MMM yyyy HH:mm:ss
-				this.headers["Date"] := date
-			}
+			FormatTime date, %A_NowUTC%, ddd, d MMM yyyy HH:mm:ss GMT
+			this.headers["Date"] := date
+			this.headers["Cache-Control"] := "no-store"
 			this.headers["Set-Cookie"] := urlCode.dumpCookies(this.cookies)
+			this.headers["Content-Type"] := this.mime
 
 			out := this.protocol " " this.status " " httpServer.http[this.status] "`n"
 			out .= urlCode.dumpHeaders(this.headers) "`n"
 			if this.body
 				out .= "`n" this.body chr(0)
 			return out
+		}
+
+		file(file, static := true) {
+			this.headers["Cache-Control"] := "max-age=300"
+			this.setMime(file)
+			this.body := FileRead(file)
+			this.status := 200
+			this._reply()
 		}
 
 		send(text, status := 200) {
@@ -225,6 +236,7 @@ class httpServer {
 
 			file := GetFullPathName(render.folder "/" name)
 			out := this.serv.getFile(file)
+			this.mime := "text/html"
 			if render.2way {
 				2way := GetFullPathName(render.folder "/" render.2way)
 				out := format(this.serv.getFile(2way), out)
