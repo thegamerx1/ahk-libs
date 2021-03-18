@@ -71,6 +71,7 @@ class httpServer {
 		Sock := Server.Accept()
 		request := new httpserver.request(this, Sock.RecvText())
 		response := new httpserver.response(this, sock, request)
+		this.log(request.path)
 
 		rPath := StrSplit(request.path, "/")
 		for _, path in this.paths {
