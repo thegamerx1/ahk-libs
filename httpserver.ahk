@@ -51,9 +51,7 @@ class httpServer {
 		try {
 			this.OnAccept(serv)
 		} catch e {
-			if e.what = "sent"
-				return
-			throw e
+			this.log(e, "ERROR")
 		}
 	}
 
@@ -73,6 +71,7 @@ class httpServer {
 		Sock := Server.Accept()
 		request := new httpserver.request(this, Sock.RecvText())
 		response := new httpserver.response(this, sock, request)
+		this.log(request.path)
 
 		rPath := StrSplit(request.path, "/")
 		for _, path in this.paths {
@@ -111,8 +110,10 @@ class httpServer {
 			try {
 				response.setMime(path)
 				response.send(this.getFile(path))
-				return
+			} catch e {
+				debug.print(e)
 			}
+			return
 		}
 
 		response.error(403)
