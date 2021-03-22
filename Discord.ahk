@@ -1023,7 +1023,7 @@ class Discord {
 		}
 
 		getMessages(opt) {
-			return this.api.CallAPI("GET", "channels/" this.id "/messages?" urlCode.encodeParams(opt))
+			return this.api.CallAPI("GET", "channels/" this.id "/messages" urlCode.encodeParams(opt))
 		}
 
 		send(content) {
@@ -1044,7 +1044,7 @@ class Discord {
 
 		getReactions(id, emoji, opt) {
 			emoji := this.api.utils.convertEmoji(emoji)
-			this.api.CallAPI("GET", "channels/" this.id "/messages/" id "/reactions/" emoji "?" rurlCode.encodeParams(opt))
+			this.api.CallAPI("GET", "channels/" this.id "/messages/" id "/reactions/" emoji urlCode.encodeParams(opt))
 		}
 
 		deleteAllReactions(id) {
