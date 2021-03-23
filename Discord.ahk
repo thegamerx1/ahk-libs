@@ -71,7 +71,6 @@ class Discord {
 	reconnect(useResume := false) {
 		if this.reconnecting
 			return
-		static TIMEOUT := 60*1000
 		static reconnec := ".[Reconnect] Last reconnect: {} ago #{}"
 		this.log(format(reconnec, niceDate(this.last_reconnect.get()), this.reconnects))
 
@@ -479,9 +478,9 @@ class Discord {
 		this.HeartbeatACK := True
 		Interval := Data.d.heartbeat_interval
 		this.heartbeatTimer.delete()
+		this.connected := true
 		this.heartbeatTimer := new timer(ObjBindMethod(this, "SendHeartbeat"), Interval)
 		TimeOnce(ObjBindMethod(this, this.resumedata ? "resume" : "identify"), 50)
-		this.connected := true
 	}
 
 	OP_HEARTBEATACK(Data) {
@@ -605,8 +604,8 @@ class Discord {
 	}
 
 	OnError(reason := "", code := "", message := "") {
-		this.log(format("Error, {},: {} {}", code, reason, message), "ERROR")
-		this.reconnect(true)
+		this.log(format("{},: {} {}", code, reason, message), "ERROR")
+		this.reconnect(false)
 	}
 
 
