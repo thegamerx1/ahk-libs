@@ -122,20 +122,23 @@ class Debug {
 		switch start {
 			case "|":
 				this.debug(out)
-				return
 			case ">":
 				this.std(out)
 			case ".":
 				this.debug(out)
 		}
 
+		if (this.attachFile)
+			FileAppend %out%, % this.attachFile
+
 		this.log .= out
+
+		if (isAction)
+			return
 
 		if (this.attachRedirect)
 			this.attachRedirect.call(out)
 
-		if (this.attachFile)
-			FileAppend %out%, % this.attachFile
 
 		if (this.attachEdit) {
 			GuiControlGet textbefore,, % this.attachEdit
