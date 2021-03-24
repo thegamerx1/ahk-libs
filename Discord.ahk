@@ -598,7 +598,7 @@ class Discord {
 
 		opname := this.OPCode[data.op]
 
-		if (opname != "dispatch")
+		if (opname != "dispatch" && opname != "heartbeatack")
 			this.log("." opname)
 		this["OP_" opname](Data)
 	}
