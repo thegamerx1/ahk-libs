@@ -592,9 +592,8 @@ class Discord {
 	OnMessage(Event) {
 		Data := JSON.load(Event.data)
 
-		; * Save the most recent sequence number for heartbeats
 		if Data.s
-			this.Seq := Data.s
+			this.seq := Data.s
 
 		opname := this.OPCode[data.op]
 
