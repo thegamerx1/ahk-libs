@@ -742,15 +742,17 @@ class Discord {
 		}
 
 		if !done {
-			for _, value in member.roles {
-				overwrite := channel.getOverwrite(value)
-				if overwrite {
-					allow |= overwrite.allow
-					deny |= overwrite.deny
+			if channel {
+				for _, value in member.roles {
+					overwrite := channel.getOverwrite(value)
+					if overwrite {
+						allow |= overwrite.allow
+						deny |= overwrite.deny
+					}
 				}
+				perms &= ~deny
+				perms |= allow
 			}
-			perms &= ~deny
-			perms |= allow
 			for key, flag in Discord.permissionList
 				if discord.checkFlag(perms, key)
 					permissions.push(key)
@@ -788,9 +790,7 @@ class Discord {
 			if guild {
 				member := guild.getMember(this.id)
 				this.roles := member.roles
-				if channel {
-					this.permissions := discord.calcPermissions(guild, channel, member)
-				}
+				this.permissions := discord.calcPermissions(guild, channel, member)
 			}
 
 		}
@@ -872,12 +872,18 @@ class Discord {
 			return new discord.channel(this.api, id, this)
 		}
 
+		getUser(id) {
+			return new discord.author(this.api, this.api.getUser(id), this)
+		}
+
 		getMember(id) {
-			; if !this.api.cache.memberGet(this.id, id) {
-			; 	if dontRequest
-			; 		return
-			; 	this.api.cache.memberSet(this.id, this.api.CallAPI("GET", "guilds/" this.id "/members/" id))
-			; }
+			if !this.api.cache.memberGet(this.id, id) {
+				try {
+					this.api.cache.memberSet(this.id, this.api.CallAPI("GET", "guilds/" this.id "/members/" id))
+				} catch {
+					return
+				}
+			}
 			return this.members[this.api.cache.memberGet(this.id, id)]
 		}
 
