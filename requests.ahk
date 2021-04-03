@@ -60,9 +60,10 @@ class requests_response {
 		this.status := com.status
 		this.statusText := com.statusText
 		this.text := com.responseText
-		this.headers := {}
-		headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
+		this.headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
 		this.url := request.async ? com.getOption(-1) : com.Option(1)
+		if request.async
+			com.abort()
 	}
 
 	json() {
