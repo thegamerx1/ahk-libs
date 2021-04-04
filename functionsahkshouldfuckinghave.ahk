@@ -285,7 +285,7 @@ eval(str, context := "") {
 	paramstr := SubStr(paramstr, 2)
 	params := []
 	if (paramstr) {
-		while match := regex(paramstr, "^((?="")\""(?<arg>[\w_\.]+)\""|(?<var>(?&arg)),?\s*)") {
+		while match := regex(paramstr, "^((?="")\""(?<arg>[^,""]+)\""|(?<var>(?&arg)),?\s*)") {
 			if match.arg {
 				params.push(match.arg)
 			} else {
@@ -315,11 +315,9 @@ eval(str, context := "") {
 		}
 	}
 
-
 	; ? query
 	if !isCall
 		return obj[func*]
-
 
 	; ? method call
 	funcn := func.pop()
