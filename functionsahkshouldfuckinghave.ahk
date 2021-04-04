@@ -312,8 +312,6 @@ eval(str, context := "") {
 	if !IsObject(obj) {
 		try {
 			obj := %obj%
-		} catch e {
-			return "global object not found"
 		}
 	}
 
@@ -325,8 +323,14 @@ eval(str, context := "") {
 
 	; ? method call
 	funcn := func.pop()
+	if (func.length() > 0) {
+		args := func.clone()
+		obj := obj[args*]
+	}
+
 	if !IsObject(obj)
-		obj := func.length() > 0 ? obj[func*] : obj
+		return "object not found"
+
 	return ObjBindMethod(obj, funcn).call(params*)
 }
 
