@@ -736,6 +736,7 @@ class Discord {
 	}
 
 	calcPermissions(guild, channel, member) {
+		static DENIES := [{name: "VIEW_CHANNEL", blocks: ["SEND_MESSAGES"]}, {name: "SEND_MESSAGES", blocks: ["MENTION_EVERYONE", "SEND_TTS_MESSAGES", "ATTACH_FILES", "EMBED_LINKS", "ADD_REACTIONS", "CONNECT", "CREATE_INSTANT_INVITE", "MANAGE_MESSAGES", "READ_MESSAGE_HISTORY", "USE_EXTERNAL_EMOJIS"]}]
 		perms := allow := deny := 0, done := false
 		permissions := []
 
@@ -766,6 +767,14 @@ class Discord {
 			for key, flag in Discord.permissionList
 				if discord.checkFlag(perms, key)
 					permissions.push(key)
+		}
+
+		for _, block in DENIES {
+			if !contains(block.name, permissions) {
+				for _, perm in block.blocks
+					if index := contains(perm, permissions)
+						permissions.RemoveAt(index)
+			}
 		}
 
 		return permissions
