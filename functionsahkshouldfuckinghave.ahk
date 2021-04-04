@@ -23,8 +23,8 @@ SplitLine(byref str, max := -1) {
 	return StrSplit(str, "`n", "`r", max)
 }
 
-strip(byref str, del) {
-	return regex(str, "^(" del ")*(?<text>.*)(" del ")*$").text
+StripNewline(byref str) {
+	return Trim(str, "`n`r")
 }
 
 Truncate(byref str, byref limit, byref ending := "..") {
@@ -98,7 +98,7 @@ contains(byref string, byref object, isObject := false) {
 		if (data = string)
 			return A_Index
 	}
-	return 0
+	return false
 }
 
 killPid(pid) {
@@ -337,8 +337,6 @@ FileRead(file) {
 	return out
 }
 
-
-
 ;; https://autohotkey.com/board/topic/76062-ahk-l-how-to-get-callstack-solution/
 CallStack(deepness := 5, printLines := 1) {
 	stack := ""
@@ -350,7 +348,7 @@ CallStack(deepness := 5, printLines := 1) {
 		FileReadLine, line, % oEx.file, % oEx.line
 		if(oEx.What = lvl)
 			continue
-		line := "	-> " strip(line, "\s")
+		line := "	-> " Trim(line)
 		stack .= "File """ oEx.file """, Line " oEx.line (oExPrev.What = lvl-1 ? "" : ", in " oExPrev.What "()") (printLines ? ":`n" line : "") "`n"
 	}
 	return stack
