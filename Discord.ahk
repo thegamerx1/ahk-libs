@@ -1043,7 +1043,7 @@ class Discord {
 		send(content) {
 			msg := this.api.SendMessage(this.id, content)
 			msg.guild_id := this.guild.id
-			return msg
+			return new Discord.message(this.api, msg)
 		}
 
 		editMessage(id, data) {
@@ -1175,7 +1175,7 @@ class Discord {
 		}
 
 		reply(data) {
-			return new this.api.message(this.api, this.channel.send(data))
+			return this.channel.send(data)
 		}
 
 		edit(data) {
