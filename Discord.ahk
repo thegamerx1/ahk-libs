@@ -536,11 +536,10 @@ class Discord {
 				this.log(".Succesfully resumed")
 
 			case "GUILD_CREATE":
+				if !this.lastguildtime
+					this.lastguildtimer := new timer(ObjBindMethod(this, "checkguildsReady"), 50)
+				this.lastguildtime := new counter(, true)
 				this.cache.guildSet(data.d.id, data.d)
-				if (data.d.id = this.owner.guild) {
-					TimeOnce(ObjBindMethod(this, "dispatch", "READY", {}), 1)
-					this.log(".READY")
-				}
 			case "GUILD_UPDATE":
 				this.cache.guildUpdate(data.d.guild_id, data.d)
 			case "GUILD_DELETE":
@@ -583,6 +582,17 @@ class Discord {
 	dispatch(event, data) {
 		fn := this.creator["_event"]
 		%fn%(this.creator, event, data)
+	}
+
+	checkguildsReady() {
+		static GUILD_TIMEOUT := 500
+		time := this.lastguildtime.get()
+		if (time > GUILD_TIMEOUT) {
+			this.lastguildtimer.delete()
+			this.lastguildtimer := false
+			this.dispatch("READY", {})
+			this.log(".READY " time)
+		}
 	}
 
 	/*
