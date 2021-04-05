@@ -775,11 +775,17 @@ class Discord {
 
 		if !done {
 			if channel {
-				for _, value in member.roles {
-					overwrite := channel.getOverwrite(value)
-					if overwrite {
-						allow |= overwrite.allow
-						deny |= overwrite.deny
+				for _, value in channel.permission_overwrites {
+					if value.type {
+						if (value.id == member.user.id) {
+							allow |= value.allow
+							deny |= value.deny
+						}
+					} else {
+						if contains(value.id, member.roles) {
+							allow |= value.allow
+							deny |= value.deny
+						}
 					}
 				}
 				perms &= ~deny
