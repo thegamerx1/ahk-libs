@@ -279,14 +279,16 @@ class Discord {
 		}
 
 		getMsg(content, webhook := false) {
-			if IsObject(content) {
-				msg := content.get(webhook)
-			} else {
-				if StrLen(content) > 2000
-					Throw Exception("Message too long", -2)
-				msg := {content: content}
+			switch content.base.__Class {
+				case "Discord.embed":
+					return content.get(webhook)
+				case "Discord.messageFile":
+					return content
+				default:
+					if StrLen(content) > 2000
+						Throw Exception("Message too long", -2)
+					return {content: content}
 			}
-			return msg
 		}
 
 		ISODATE(str, noms := false) {
@@ -330,17 +332,21 @@ class Discord {
 		}
 	}
 
-	CallAPI(method, endpoint, data := "", async := false) {
+	CallAPI(method, endpoint, data := "", multipart := false) {
 		static loggyFormat := "[{}:{}] [{}ms] {}"
-		http := new requests(method, Discord.baseapi endpoint,, async)
+		http := new requests(method, Discord.baseapi endpoint)
 		count := new Counter(, true)
-		; ? Try the request multiple times if necessary
+
 		Loop 2 {
 			http.headers["Authorization"] := "Bot " this.token
 
-			if IsObject(data) {
+			if (IsObject(data) && !multipart) {
 				http.headers["Content-Type"] := "application/json"
 				data := JSON.dump(data)
+			} else if (multipart) {
+				form := new requests.FormData()
+				data.generate(form)
+				data := form
 			}
 
 			http.headers["User-Agent"] := "Discord.ahk"
@@ -393,7 +399,7 @@ class Discord {
 		msg := this.utils.getMsg(content)
 		if (StrLen(msg.content) > 2000)
 			Throw Exception("Message too long", -1)
-		return this.CallAPI("POST", "channels/" channel "/messages", msg)
+		return this.CallAPI("POST", "channels/" channel "/messages", msg, msg.isMultipart)
 	}
 
 	getGuild(id) {
@@ -649,6 +655,21 @@ class Discord {
 
 		get() {
 			return this.pages
+		}
+	}
+
+	class messageFile {
+		__New(filename, filecontent, content := "") {
+			this.filename := filename
+			this.filecontent := filecontent
+			this.content := content
+			this.isMultipart := true
+		}
+
+		generate(form) {
+			if (this.content)
+				form.set("content", this.content)
+			form.set("file", this.filecontent, this.filename)
 		}
 	}
 
