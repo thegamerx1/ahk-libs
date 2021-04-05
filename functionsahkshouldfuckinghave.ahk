@@ -275,12 +275,17 @@ Bool(bool) {
 	return ""
 }
 
+parse_eval(out, what) {
+	return what ? out[StrSplit(what, ".")*] : out
+}
+
 eval(str, context := "") {
-	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*)\)|)$"))
+	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*)\)|)(\.(?<get>(.*)))?$"))
 		Throw Exception("Invalid query")
 
 	func := StrSplit(match.str, ".")
 	paramstr := match.params
+	getExtra := match.get
 	isCall := StartsWith(paramstr,  "(")
 	paramstr := SubStr(paramstr, 2)
 	params := []
@@ -297,7 +302,7 @@ eval(str, context := "") {
 
 	; ? function call
 	if (func.length() = 1 && isCall)
-		return Func(func[1]).call(params*)
+		return parse_eval(Func(func[1]).call(params*), getExtra)
 
 	obj := func[1]
 	for _, value in context {
@@ -329,7 +334,7 @@ eval(str, context := "") {
 	if !IsObject(obj)
 		return "object not found"
 
-	return ObjBindMethod(obj, funcn).call(params*)
+	return parse_eval(ObjBindMethod(obj, funcn).call(params*), getExtra)
 }
 
 FileRead(file) {
