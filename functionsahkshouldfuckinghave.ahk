@@ -303,10 +303,10 @@ eval(str, context := "") {
 	for _, value in context {
 		if (obj = value.name) {
 			obj := value.val
-			func.RemoveAt(1)
 			break
 		}
 	}
+	func.RemoveAt(1)
 
 	; ? global class
 	if !IsObject(obj) {
