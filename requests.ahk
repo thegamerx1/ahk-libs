@@ -105,7 +105,6 @@ class requests {
 				out .= "`nContent-Type: " form.mime "`n`n" form.val "`n"
 			}
 			out .= "--" this.boundary "--"
-			debug.print(out)
 			return out
 		}
 	}
