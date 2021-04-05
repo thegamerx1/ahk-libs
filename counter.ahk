@@ -13,16 +13,8 @@ class counter {
 	}
 
 	Reset() {
-		if this.starttime {
-			out := this.get()
-			this.legacy := A_TickCount
-		} else {
-			out := this.get()
-			DllCall("QueryPerformanceFrequency", "Int64*", freq := 0)
-			this.freq := freq
-			DllCall("QueryPerformanceCounter", "Int64*", before := 0)
-			this.before := before
-		}
+		out := this.get()
+		this.__New(this.count, this.legacy)
 		return out
 	}
 
