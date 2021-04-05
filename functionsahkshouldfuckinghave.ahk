@@ -276,11 +276,11 @@ Bool(bool) {
 }
 
 parse_eval(out, what) {
-	return what ? out[StrSplit(what, ".")*] : out
+	return what ? eval("__." what, [{name: "__", val: out}]) : out
 }
 
 eval(str, context := "") {
-	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*)\)|)(\.(?<get>(.*)))?$"))
+	if !(match := regex(str, "^(?<str>[\w\.]+)(?(?=\()(?<params>\(.*?)\)|)(\.(?<get>(.*)))?$"))
 		Throw Exception("Invalid query")
 
 	func := StrSplit(match.str, ".")
