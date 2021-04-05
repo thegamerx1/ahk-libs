@@ -289,7 +289,7 @@ eval(str, context := "") {
 			if match.arg {
 				params.push(match.arg)
 			} else {
-				params.push(match.var)
+				params.push(eval(match.var, context))
 			}
 			paramstr := StrReplace(paramstr, match.0,, 1)
 		}
