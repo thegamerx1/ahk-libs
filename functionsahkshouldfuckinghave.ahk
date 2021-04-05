@@ -290,7 +290,7 @@ eval(str, context := "") {
 	paramstr := SubStr(paramstr, 2)
 	params := []
 	if (paramstr) {
-		while match := regex(paramstr, "^((?="")\""(?<arg>[^,""]+)\""|(?<var>(?&arg)),?\s*)") {
+		while match := regex(paramstr, "^((?="")\""(?<arg>[^,]+)\""|(?<var>(?&arg)),?\s*)") {
 			if match.arg {
 				params.push(match.arg)
 			} else {
