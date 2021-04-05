@@ -35,7 +35,7 @@ class Discord {
 		this.ratelimit := {}
 		if this.connect()
 			throw Exception("invalid token")
-		OnError(ObjBindMethod(this, "handleError", -1))
+		OnError(ObjBindMethod(this, "handleError", 1))
 	}
 
 	handleError(e) {
@@ -310,7 +310,7 @@ class Discord {
 		}
 
 		sanitize(str, delims := "``") {
-			return StrReplace(str, "``", chr(8203) "``")
+			return StrReplace(str, delims, delims chr(8203))
 		}
 
 		getCodeBlock(code) {
@@ -366,7 +366,7 @@ class Discord {
 				if !httpjson.retry_after
 					break
 
-				sleep % httpjson.retry_after
+				sleep % httpjson.retry_after * 1000
 				continue
 			}
 			break
@@ -536,7 +536,7 @@ class Discord {
 				this.self := data.d.user
 				this.self.application := data.d.application
 				if (this.owner.guild)
-					return
+					data.t := "READY_EARLY"
 
 			case "RESUMED":
 				this.log(".Succesfully resumed")
@@ -1216,6 +1216,7 @@ class Discord {
 
 		edit(data) {
 			this.channel.editMessage(this.id, data)
+			return this
 		}
 
 		delete() {
@@ -1228,6 +1229,7 @@ class Discord {
 				if (e.Extra != 10008)
 					throw e
 			}
+			return this
 		}
 
 		getEmoji(name) {
