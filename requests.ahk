@@ -22,6 +22,11 @@ class requests {
 		if !this.async
 			this.com.Option(6) := this.allowredirect
 
+		if (data.base.__class == "requests.FormData") {
+			this.headers["Content-Type"] := "multipart/form-data; boundary=" data.boundary
+			data := data.generate()
+		}
+
 		for name, value in this.headers
 			this.com.SetRequestHeader(name, value)
 
@@ -33,10 +38,11 @@ class requests {
 			}
 		}
 
+
 		this.com.send(data)
 
 		if !this.async {
-			return new requests_response(this)
+			return new requests.response(this)
 		}
 	}
 
@@ -45,32 +51,62 @@ class requests {
 			return
 		this.called := true
 		try {
-			this.onFinished.call(new requests_response(this))
+			this.onFinished.call(new requests.response(this))
 		} catch e {
 			debug.print("[REQUEST] Error on a async thread")
 			debug.print(e)
 		}
 	}
-}
+	class response {
+		__New(request) {
+			this.request := request
+			com := request.com
+			this.status := com.status
+			this.statusText := com.statusText
+			this.text := com.responseText
+			this.headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
+			this.url := request.async ? com.getOption(-1) : com.Option(1)
+			if request.async
+				com.abort()
+		}
 
-class requests_response {
-	__New(request) {
-		this.request := request
-		com := request.com
-		this.status := com.status
-		this.statusText := com.statusText
-		this.text := com.responseText
-		this.headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
-		this.url := request.async ? com.getOption(-1) : com.Option(1)
-		if request.async
-			com.abort()
+		json() {
+			try {
+				return JSON.load(this.text)
+			} catch e {
+				Throw Exception("Not json output", -1)
+			}
+		}
 	}
 
-	json() {
-		try {
-			return JSON.load(this.text)
-		} catch e {
-			Throw Exception("Not json output", -1)
+	class FormData {
+		__New() {
+			this.boundary := StrMultiply("-", 2) "AhkFormBoundary" RandomString(16)
+			this.data := {}
+		}
+
+		set(key, value, filename := "", mime := "", disp := "") {
+			obj := {name: key, val: value, mime: mime != "" ? mime : "text/plain", disp: disp != "" ? disp : "form-data"}
+			if (filename != "")
+				obj.file := filename
+			this.data[key] := obj
+		}
+
+		get(key) {
+			return this.data[key].val
+		}
+
+		generate() {
+			out := ""
+			for _, form in this.data {
+				out .= "--" this.boundary "`nContent-Disposition: " form.disp "; name=""" form.name """"
+				if form.file
+					out .= "; filename=""" form.file """"
+				out .= "`nContent-Type: " form.mime "`n`n" form.val "`n"
+			}
+			out .= "--" this.boundary "--"
+			debug.print(out)
+			return out
 		}
 	}
 }
