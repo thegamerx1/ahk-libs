@@ -423,7 +423,7 @@ class Discord {
 		return this.cache.dmGet(id)
 	}
 
-	getEmoji(name, guild := "") {
+	getEmoji(name, guild := false) {
 		if !guild
 			guild := this.owner.guild
 		return this.cache.emojiGet(guild, name)
@@ -866,6 +866,10 @@ class Discord {
 
 		kick() {
 			this.guild.kick(this.id)
+		}
+
+		ban(reason, oldmessages) {
+			this.guild.ban(this.id, reason, oldmessages)
 		}
 	}
 
