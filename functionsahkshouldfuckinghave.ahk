@@ -61,7 +61,7 @@ Clone(obj) {
 ObjectMerge(array1, array2c) {
 	array2 := clone(array2c)
 	for key, value in array1 {
-		array2[key] := (IsObject(value) && !value.base.IsArray) ? ObjectMerge(value, array2[key]) : value
+		array2[key] := (IsObject(value) && !value.base.IsArray) ? ObjectMerge(array2[key], value) : value
 	}
 
 	return array2
