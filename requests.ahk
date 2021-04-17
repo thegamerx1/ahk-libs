@@ -27,6 +27,9 @@ class requests {
 			data := data.generate()
 		}
 
+		if (this.cookies.Count() > 0)
+			this.headers["cookie"] := urlCode.dumpCookies(this.cookies)
+
 		for name, value in this.headers
 			this.com.SetRequestHeader(name, value)
 
