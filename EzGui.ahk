@@ -139,6 +139,24 @@ class EzGui {
 		}
 	}
 
+	add(byref name, options := "", value := "") {
+		id := false
+		if (RegExMatch(options, "O)v(?<id>\w+)", match)) {
+			id := match.id
+			options := StrReplace(options, match.0, "+hwndhwnd")
+		}
+
+		Gui % this.controls.gui ":add", %name%, %options%, %value%
+		if (id) {
+			this.controls[id] := hwnd
+			return this.get(id)
+		}
+	}
+
+	get(byref name) {
+		return new EzGuiControl(this, name)
+	}
+
 	class console {
 		log(a) {
 			debug.print(a, {label: "JsConsole"})
@@ -179,40 +197,6 @@ class EzGui {
 
 	maximize() {
 		Gui % this.controls.gui ":maximize"
-	}
-
-	AddControl(byref name, options := "", value := "") {
-		if (RegExMatch(options, "O)v(?<id>\w+)", match)) {
-			id := match.id
-			options := StrReplace(options, match.0, "+hwndhwnd")
-		}
-
-		Gui % this.controls.gui ":add", %name%, %options%, %value%
-		if (id)
-			this.controls[id] := hwnd
-	}
-
-	ControlGet(byref name) {
-		control := this.controls[name]
-		if !control
-			Throw Exception("No control found: " name, -1)
-		return control
-	}
-
-	setControl(byref name, byref value) {
-		control := this.ControlGet(name)
-		GuiControl,, %control%, %value%
-	}
-
-	getControl(byref name) {
-		control := this.ControlGet(name)
-		GuiControlGet value,, %control%
-		return value
-	}
-
-	optionControl(byref name, byref option) {
-		control := this.ControlGet(name)
-		GuiControl %option% +Redraw, %control%
 	}
 
 	resetFont() {
@@ -288,10 +272,10 @@ class EzGui {
 
 	initHooks() {
 		if !this.config.browser {
-			this.creator.buildGui(this)
-
 			this.events := new EventManager(this)
 			this.creator.events(this.events)
+
+			this.creator.buildGui(this)
 		}
 
 		this.messages := new MessageManager(this)
@@ -450,9 +434,14 @@ class EventManager {
 		hwnd := this._this.controls[id]
 		if !hwnd
 			Throw "Id not found!"
-		this.list[hwnd] := {}
-		handler := this.list[hwnd].handler := ObjBindMethod(this._this.creator, functionname)
+		this.list[hwnd] := {id: id, handler: ObjBindMethod(this._this.creator, functionname)}
+		handler := ObjBindMethod(this, "handler", hwnd)
 		GuiControl +g, %hwnd%, %handler%
+	}
+
+	handler(id, params*) {
+		item := this.list[id]
+		item.handler.call(this._this.get(item.id), params*)
 	}
 
 	Delete() {
@@ -491,5 +480,66 @@ class BrowserEvent {
 				doc.ExecCommand(key.name)
 			}
 		}
+	}
+}
+
+
+Class EzGuiControl {
+	__New(parent, byref name) {
+		this.controls := parent.controls
+		hwnd := this.controls[name]
+		if !hwnd {
+			for key, val in this.controls {
+				if (key == name)
+					hwnd := val
+			}
+			if !hwnd
+				Throw Exception("No control found: " name, -1)
+		}
+		this.hwnd := hwnd
+		this.name := name
+		this.parent := parent
+	}
+
+	set(byref value) {
+		control := this.hwnd
+		GuiControl,, %control%, %value%
+		return this
+	}
+
+	get() {
+		control := this.hwnd
+		GuiControlGet value,, %control%
+		return value
+	}
+
+	option(byref option, draw := true) {
+		control := this.hwnd
+		if draw
+			GuiControl %option% +Redraw, %control%
+			return this
+	}
+
+	disable() {
+		control := this.hwnd
+		GuiControl, Disable, %control%
+		return this
+	}
+
+	enable() {
+		control := this.hwnd
+		GuiControl, enable, %control%
+		return this
+	}
+
+	hide() {
+		control := this.hwnd
+		GuiControl, Hide, %control%
+		return this
+	}
+
+	on(byref functionname) {
+		this.parent.events.add(this.name, functionname)
+		return this
 	}
 }

@@ -6,6 +6,11 @@ class urlCode {
 		return str
 	}
 
+	url(byref url) {
+		regex := regex(url, "((?<proto>\w+):\/{2})?(?<base>[-a-zA-Z0-9@:%._\+~#=]+\.\w+)(?<path>[^?]*)(\/?\?(?<params>([-a-zA-Z0-9()@:%_\+.~#?&=]+)))?")
+		return {proto: regex.proto, base: regex.base, path: regex.path, params: this.decodeParams(regex.params)}
+	}
+
 	encode(str) {
 		VarSetCapacity(Var, StrPut(str, "UTF-8"), 0)
 		StrPut(str, &Var, "UTF-8")
@@ -78,7 +83,7 @@ class urlCode {
 	dumpCookies(obj) {
 		out := ""
 		for key, value in obj {
-			out .= (out ? "; "  : "") key "=" value
+			out .= (out ? "; "  : "") key "=" this.encode(value)
 		}
 		return out
 	}
