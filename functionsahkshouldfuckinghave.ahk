@@ -19,6 +19,14 @@ IsFolder(folder) {
 	return (exist && InStr("D", exist))
 }
 
+keys(object) {
+	keys := []
+	for key in object {
+		keys.push(key)
+	}
+	return keys
+}
+
 SplitLine(byref str, max := -1) {
 	return StrSplit(str, "`n", "`r", max)
 }
