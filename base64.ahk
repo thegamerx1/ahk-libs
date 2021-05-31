@@ -7,7 +7,8 @@ base64Enc(string) {
     VarSetCapacity(buf, size << 1, 0)
     if !(DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", len, "uint", 0x1, "ptr", &buf, "uint*", size))
         throw Exception("CryptBinaryToString failed", -1)
-    return StrGet(&buf)
+    str := StrGet(&buf)
+    return SubStr(str, 1, size-2)
 }
 
 base64Dec(string) {
