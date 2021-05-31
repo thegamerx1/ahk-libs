@@ -222,18 +222,19 @@ strGetLast(str, limit) {
 }
 
 Unix2Miss(time) {
-    human := 19700101000000
-    time -= ((A_NowUTC-A_Now)//10000)*3600
-    human += %time%,Seconds
-    return human
+	static diff := (A_NowUTC-A_Now)/10000*3600
+   human := 19700101000000
+   time -= diff
+   human += %time%,Seconds
+   return human
 }
 
 StartsWith(str, start) {
 	return SubStr(str, 1, StrLen(start)) = start
 }
 
-Miss2Text(miss) {
-	FormatTime time, % miss, yyyy MMMM dddd HH:mm
+Miss2Text(byref miss) {
+	FormatTime time, % miss, yyyy MMMM dddd HH:mm:ss
 	return time
 }
 
