@@ -35,12 +35,12 @@ class Discord {
 		this.ratelimit := {}
 		if this.connect()
 			throw Exception("invalid token")
-		OnError(ObjBindMethod(this, "handleError", 1))
+		OnError(ObjBindMethod(this, "handleError"), -1)
 	}
 
 	handleError(e) {
 		if (e.what = "DISCORDAHK_CALLAPI") {
-			this.log("Request failed: " httpout.text, "WARNING")
+			this.log(e.extra, "ERROR")
 			return 1
 		}
 	}
@@ -351,7 +351,7 @@ class Discord {
 
 			http.headers["User-Agent"] := "Discord.ahk"
 			httpout := http.send(data)
-			this.log("." format(loggyFormat, method, httpout.status, count.get(), endpoint))
+			log := format(loggyFormat, method, httpout.status, count.get(), endpoint)
 			httpjson := httpout.json()
 			; TODO: ratelimit
 			; this.ratelimit.bucket := httpout.headers["x-ratelimit-bucket"]
@@ -364,7 +364,7 @@ class Discord {
 			; * Handle rate limiting
 			if (httpout.status = 429) {
 				if !httpjson.retry_after
-					break
+				break
 
 				sleep % httpjson.retry_after * 1000
 				continue
@@ -374,7 +374,8 @@ class Discord {
 
 		; * Request was unsuccessful
 		if !StartsWith(httpout.status, 20)
-			throw Exception(httpjson.message, "DISCORDAHK_CALLAPI", httpjson.code)
+			throw Exception(httpjson.message, "DISCORDAHK_CALLAPI", log)
+		this.log("." log)
 
 		return httpjson
 	}
@@ -596,8 +597,8 @@ class Discord {
 		if (time > GUILD_TIMEOUT) {
 			this.lastguildtimer.delete()
 			this.lastguildtimer := false
+			this.log(".Waited for guils until ready " time "ms")
 			this.dispatch("READY", {})
-			this.log(".READY " time)
 		}
 	}
 
@@ -605,9 +606,8 @@ class Discord {
 		? Websocket
 	*/
 
-	OnMessage(Event) {
-		Data := JSON.load(Event.data)
-
+	OnMessage(data) {
+		data := JSON.load(data)
 		if Data.s
 			this.seq := Data.s
 
