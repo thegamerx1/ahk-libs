@@ -14,7 +14,7 @@ class Debug {
 		}
 
 		this.log := ""
-		OnError(ObjBindMethod(this, "error"))
+		OnError(ObjBindMethod(this, "error"), 1)
 	}
 
 	space(name, debug := false) {
@@ -29,7 +29,8 @@ class Debug {
 
 	error(e) {
 		this.print(CallStack(4))
-		this.print(e)
+		this.print(IsObject(e) ? e.what ", " e.message : e)
+		return true
 	}
 
 	clean(reason, code) {
