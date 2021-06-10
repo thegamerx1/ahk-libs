@@ -1,4 +1,6 @@
 ;; ? Modified from https://github.com/G33kDude/WebSocket.ahk
+
+#include <JSON>
 class WebSocket {
 	__New(creator, WS_URL) {
 		static wb
@@ -33,14 +35,17 @@ class WebSocket {
 	}
 
 	; Called by the JS in response to WS events
-	Event(EventName, Event*) {
-		fn := this.creator["On" EventName]
+	Event(arg*) {
+		; Avoid ie error handling
+		TimeOnce(ObjBindMethod(this, "EventFix", arg*), 1)
+	}
+
+	EventFix(name, event) {
+		fn := this.creator["On" name]
 		try {
-			%fn%(this.creator, Event*)
-		} catch e {
-			debug.print(e)
-			ExitApp 1
+			data := event.data
 		}
+		%fn%(this.creator, data)
 	}
 
 	; Sends data through the WebSocket
