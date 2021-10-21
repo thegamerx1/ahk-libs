@@ -1,4 +1,6 @@
 #include <urlCode>
+#include <counter>
+
 class requests {
 	__New(type, url, params := "", async := false) {
 		this.url := url
@@ -42,6 +44,7 @@ class requests {
 		}
 
 
+		this.time := new counter()
 		this.com.send(data)
 
 		if !this.async {
@@ -62,6 +65,7 @@ class requests {
 	}
 	class response {
 		__New(request) {
+			this.time := request.time.get()
 			this.request := request
 			com := request.com
 			this.status := com.status
@@ -69,8 +73,9 @@ class requests {
 			this.text := com.responseText
 			this.headers := urlCode.parseHeaders(com.GetAllResponseHeaders())
 			this.url := request.async ? com.getOption(-1) : com.Option(1)
-			if request.async
+			if (request.async) {
 				com.abort()
+			}
 		}
 
 		json() {

@@ -1,6 +1,7 @@
 ;; ? Modified from https://github.com/G33kDude/WebSocket.ahk
 
 #include <JSON>
+#include <timer>
 class WebSocket {
 	__New(creator, WS_URL) {
 		static wb
@@ -20,6 +21,8 @@ class WebSocket {
 		)"
 
 		this.creator := creator
+		this.queue := []
+		this.queueTimer := new timer(ObjBindMethod(this, "tick"), 10)
 		; ? Create an IE instance
 		Gui +hWndhOld
 		Gui New, +hWndhWnd
@@ -36,16 +39,19 @@ class WebSocket {
 
 	; Called by the JS in response to WS events
 	Event(arg*) {
-		; Avoid ie error handling
-		TimeOnce(ObjBindMethod(this, "EventFix", arg*), 1)
+		data := ""
+		try {
+			data := arg[2].data
+		}
+		this.queue.push([arg[1], data])
 	}
 
-	EventFix(name, event) {
-		fn := this.creator["On" name]
-		try {
-			data := event.data
+	tick() {
+		for i, item in this.queue {
+			fn := this.creator["On" item[1]]
+			%fn%(this.creator, item[2])
+			this.queue.RemoveAt(i)
 		}
-		%fn%(this.creator, data)
 	}
 
 	; Sends data through the WebSocket
@@ -55,6 +61,8 @@ class WebSocket {
 
 	; Closes the WebSocket connection
 	Close(Code:=1000, Reason:="") {
+		this.queueTimer.delete()
+		this.queueTimer := False
 		try {
 			this.wnd.ws.close(Code, Reason)
 		}
