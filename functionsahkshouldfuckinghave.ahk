@@ -191,13 +191,24 @@ strMultiply(byref str, times) {
 }
 
 ClipBoardPaste(byref text) {
-	oldclipboard := clipboard
+	oldclip := clipboard
 	clipboard := ""
 	clipboard := text
 	ClipWait 1
 	send {Ctrl down}v{Ctrl up}
 	sleep 50
-	clipboard := oldclipboard
+	clipboard := oldclip
+}
+
+ClipBoardCopy() {
+	oldclip := Clipboard
+	clipboard := ""
+	send ^c
+	sleep 25
+	clipwait
+	content := clipboard
+	Clipboard := oldclip
+	return content
 }
 
 SetTimer(fn, time) {
