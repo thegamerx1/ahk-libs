@@ -11,7 +11,7 @@ class requests {
 		this.url .= urlCode.encodeParams(params)
 		this.async := async
 		this.timeout := 2
- 	}
+	}
 
 	send(data := "") {
 		this.com := ComObjCreate(this.async ? "Msxml2.ServerXMLHTTP.6.0" : "WinHttp.WinHttpRequest.5.1")
@@ -32,8 +32,15 @@ class requests {
 		if (this.cookies.Count() > 0)
 			this.headers["cookie"] := urlCode.dumpCookies(this.cookies)
 
+		if this.json {
+			if !this.headers["Content-Type"]
+				this.headers["Content-Type"] := "application/json"
+			data := JSON.dump(this.json)
+		}
+
 		for name, value in this.headers
 			this.com.SetRequestHeader(name, value)
+
 
 		if this.async {
 			timeout := this.timeout*1000
