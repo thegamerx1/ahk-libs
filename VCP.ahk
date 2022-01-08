@@ -1,4 +1,7 @@
 class VCP {
+	static BRIGHTNESS := 0x10
+	static CONTRAST := 0x12
+
 	__New(cords) {
 		VarSetCapacity(coord, 8)
 		NumPut(cords.x, coord, 0, "Int")

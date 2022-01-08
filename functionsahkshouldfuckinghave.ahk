@@ -358,8 +358,11 @@ eval(str, context := "") {
 }
 
 FileRead(file) {
-	FileRead out, %file%
-	return out
+	if !IsFile(file) {
+		throw ExCeption("File not found", -1, file)
+	}
+	obj := FileOpen(file, "r", "UTF-8")
+	return obj.Read()
 }
 
 ;; https://autohotkey.com/board/topic/76062-ahk-l-how-to-get-callstack-solution/

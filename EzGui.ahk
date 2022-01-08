@@ -2,6 +2,97 @@
 #Include <functionsahkshouldfuckinghave>
 #Include <FileInstall>
 
+class EzGuiHelper {
+	static HT_VALUES := [[13, 12, 14], [10, 1, 11], [16, 15, 17]]
+	generateInject() {
+		static toInject := ["libs/bootstrap-dark.min.css"
+		,"minify/default.css"
+		,"libs/jquery-3.5.1.min.js"
+		,"libs/polyfill.min.js"
+		,"minify/funcs.js"
+		,"libs/webcomponents.js"
+		,"minify/titlebar.js"
+		,"libs/bootstrap.min.js"
+		,"inject.js"]
+		static templatejs := "<script>{}</script>"
+		static templatecss := "<style>{}</style>"
+		inject := ""
+		for _, value in toInject {
+			file := A_MyDocuments "\Autohotkey\lib\EzGui\" value
+			inject .= format(value ~= ".css" ? templatecss : templatejs, FileRead(file))
+		}
+		return inject
+	}
+
+	resolveLocal(html, dir) {
+		While match := regex(html, "\<link rel=""stylesheet"" href=""(?<src>.+?)\"" ?\/\>") {
+			src := StrReplace(match.src, "file://")
+			css := FileRead(dir src)
+			html := StrReplace(html, match.0, "<style>" css "</style>")
+		}
+		While match := regex(html, "\<script src=""(?<src>.+?)""\>\</script\>") {
+			src := StrReplace(match.src, "file://")
+			css := FileRead(dir src)
+			html := StrReplace(html, match.0, "<script>" css "</script>")
+		}
+		return html
+	}
+
+	inject(dir) {
+		dir := A_WorkingDir "\" dir "\"
+		html := FileRead(dir "index.html")
+		pos := InStr(html, "<script") || InStr(html, "</body>")
+		if !pos {
+			this.fatalError("Could not find </body> or </script> in " file)
+		}
+		len := StrLen(html)
+		html := SubStr(html, 1, pos-1) this.generateInject() SubStr(html, pos, len-pos)
+		html := this.resolveLocal(html, dir)
+		return html
+	}
+
+
+	fatalError(what) {
+		Msgbox 16, Fatal error, EzGui encountered a fatal error and will exit`n%what%
+		ExitApp 1
+	}
+
+	; yoinked code from neutron.ahk by geekdude
+	RegistryFix() {
+		EXE_NAME := A_IsCompiled ? A_ScriptName : StrSplit(A_AhkPath, "\").Pop()
+		KEY_FBE := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION"
+		RegWrite REG_DWORD, % KEY_FBE, % EXE_NAME, 11001
+
+	}
+
+	SetWindowFillColor(hwnd, colorHex := 000000) {
+		colorHex := this._HexToABGR(colorHex)
+		VarSetCapacity(wcad, A_PtrSize+A_PtrSize+4, 0)
+		NumPut(19, &wcad, 0, "Int")
+		VarSetCapacity(accent, 16, 0)
+		NumPut(colorHex, &accent, 0, "Int")
+		NumPut(&accent, &wcad, A_PtrSize, "Ptr")
+		NumPut(16, &wcad, A_PtrSize+A_PtrSize, "Int")
+		DllCall("SetWindowCompositionAttribute", "UPtr", hwnd, "UPtr", &wcad)
+	}
+
+	EnableShadow(hwnd) {
+		; Enable shadow
+		VarSetCapacity(margins, 16, 0)
+		NumPut(1, &margins, 0, "Int")
+		DllCall("Dwmapi\DwmExtendFrameIntoClientArea"
+		, "UPtr", hwnd      ; HWND hWnd
+		, "UPtr", &margins) ; MARGINS *pMarInset
+	}
+
+	_HexToABGR(colorHex) {
+		colorHex := StrReplace(colorHex, "0x", "")
+		colorHex := StrReplace(colorHex, "#", "")
+		return "0xff" SubStr(colorHex, 5, 2) SubStr(colorHex, 3 , 2) SubStr(colorHex, 1 , 2)
+	}
+	; end yoinked code
+}
+
 class EzGui {
 	__New(creator, config := "") {
 		defaultconf := {resize: false
@@ -25,13 +116,14 @@ class EzGui {
 		try {
 			this.initGui()
 		} catch e {
-			this.fatalError(JSON.dump(e,0,1))
+			EzGuiHelper.fatalError(JSON.dump(e,0,1))
 		}
 		this.resetFont()
 	}
 
 	initGui() {
 		this.controls := {}
+		this.internals := {}
 		conf := this.config
 		if conf.handleExit
 			OnExit(ObjBindMethod(this, "handleExit"), -1)
@@ -51,80 +143,62 @@ class EzGui {
 			h := conf.h
 			m := conf.margin
 
-			; yoinked code from neutron.ahk by geekdude
-			EXE_NAME := A_IsCompiled ? A_ScriptName : StrSplit(A_AhkPath, "\").Pop()
-			KEY_FBE := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\MAIN\FeatureControl\FEATURE_BROWSER_EMULATION"
-			RegWrite REG_DWORD, % KEY_FBE, % EXE_NAME, 11001
-
+			EzGuiHelper.RegistryFix()
 			Gui Add, ActiveX, vwb x0 y0 w%w% h%h% hwndhwb, shell.explorer
 			this.wb := wb
 			this.controls.wb := hwb
 
 			ComObjConnect(wb, new BrowserEvent)
-			if A_IsCompiled {
-				wb.Navigate("about:blank")
-				while (wb.readyState != 4) {
-					if (A_Index-1 > 50*100) { ; 5s
-						this.fatalError("Waiting timed out (readyState) A_IsCompiled")
-					}
-					Sleep 50
-				}
-				this.doc.write(GetScriptResource(conf.browserhtml "minify/index.html"))
-				this.doc.close()
-			} else {
-				wb.Navigate(A_WorkingDir "\" conf.browserhtml "index.html")
-			}
-
-			VarSetCapacity(margins, 16, 0)
-			NumPut(1, &margins, 0, "Int")
-			DllCall("Dwmapi\DwmExtendFrameIntoClientArea"
-			, "UPtr", hGui      ; HWND hWnd
-			, "UPtr", &margins) ; MARGINS *pMarInset
-			VarSetCapacity(wcad, A_PtrSize+A_PtrSize+4, 0)
-			NumPut(19, &wcad, 0, "Int")
-			VarSetCapacity(accent, 16, 0)
-			NumPut(3, &accent, 0, "Int")
-			NumPut(&accent, &wcad, A_PtrSize, "Ptr")
-			NumPut(16, &wcad, A_PtrSize+A_PtrSize, "Int")
-			DllCall("SetWindowCompositionAttribute", "UPtr", this.controls.gui, "UPtr", &wcad)
-			this.wb.RegisterAsDropTarget := false
-			; end yoinked code
-
+			wb.Navigate("about:blank")
 			while (wb.readyState != 4) {
 				if (A_Index-1 > 50*100) { ; 5s
-					this.fatalError("Waiting timed out (readyState)")
+					EzGuiHelper.fatalError("Waiting timed out (readyState)")
 				}
 				Sleep 50
 			}
-			this.log(".browser ready")
+			if A_IsCompiled {
+				html := GetScriptResource(conf.browserhtml "minify/index.html")
+			} else {
+				html := EzGuiHelper.inject(conf.browserhtml)
+			}
+			ComObjError(false)
+
+			this.doc.write(html)
+			this.doc.close()
+
+			this.wb.RegisterAsDropTarget := false
+			EzGuiHelper.EnableShadow(this.controls.gui)
+			if !conf.caption
+				EzGuiHelper.SetWindowFillColor(this.controls.gui)
+
+			while (wb.readyState != 4) {
+				if (A_Index-1 > 50*100) { ; 5s
+					EzGuiHelper.fatalError("Waiting timed out (readyState)")
+				}
+				Sleep 50
+			}
 
 			ControlGet, IES, hwnd,, Internet Explorer_Server1, % "ahk_id" this.controls.gui
-			this.controls.IES := IES
+			this.internals.IES := IES
+			ControlGet, DocOBJ, hWnd,, Shell DocObject View1, % "ahk_id" this.controls.gui
+			this.internals.DocOBJ := DocOBJ
+
+			this.controls.proc := RegisterCallback(this.WindowProc, "", 4, &this)
+			this.controls.procold := DllCall("SetWindowLong" (A_PtrSize == 8 ? "Ptr" : "")
+			, "Ptr", this.internals.IES     ; HWND     hWnd
+			, "Int", -4            ; int      nIndex (GWLP_WNDPROC)
+			, "Ptr", this.proc ; LONG_PTR dwNewLong
+			, "Ptr") ; LONG_PTR
+
 			DllCall("ole32\RevokeDragDrop", "UPtr", IES)
+			this.log(".browser ready")
 
-			if !A_IsCompiled {
-				Loop {
-					try
-						if this.wnd.inject.done
-							break
-					if (A_Index-1 > 50*100)
-						this.fatalError("Waiting timed out (inject)")
-
-					Sleep 50
-				}
-				this.log(".injected")
-			}
 			this.wnd.ahk := this.creator
 			this.wnd.gui := this
 			this.wnd.console := this.console
 			this.wnd.ready()
 		}
 		Gui Margin, % conf.margin, % conf.margin
-	}
-
-	fatalError(what) {
-		Msgbox 16, Fatal error, EzGui encountered a fatal error and will exit`n%what%
-		ExitApp 1
 	}
 
 	wnd {
@@ -322,7 +396,7 @@ class EzGui {
 		pipa := ComObjQuery(this.wb, "{00000117-0000-0000-C000-000000000046}")
 		VarSetCapacity(kMsg, 48), NumPut(A_GuiY, NumPut(A_GuiX
 		, NumPut(A_EventInfo, NumPut(lParam, NumPut(wParam
-		, NumPut(Msg, NumPut(this.controls.IES, kMsg)))), "uint"), "int"), "int")
+		, NumPut(Msg, NumPut(this.internals.IES, kMsg)))), "uint"), "int"), "int")
 		Loop 2
 			r := DllCall(NumGet(NumGet(1*pipa)+5*A_PtrSize), "ptr", pipa, "ptr", &kMsg)
 		until wParam != 9 || this.wb.Document.activeElement != ""
@@ -351,9 +425,26 @@ class EzGui {
 	}
 
 	WM_NCCALCSIZE(wParam, lParam) {
-		if (A_Gui != this.controls.gui)
-			return
-		return 0
+
+		; Fill client area when not maximized
+		if !DllCall("IsZoomed", "UPtr", this.controls.gui)
+			return 0
+		; else crop borders to prevent screen overhang
+
+		; Query for the window's border size
+		VarSetCapacity(windowinfo, 60, 0)
+		NumPut(60, windowinfo, 0, "UInt")
+		DllCall("GetWindowInfo", "UPtr", this.controls.gui, "UPtr", &windowinfo)
+		cxWindowBorders := NumGet(windowinfo, 48, "Int")
+		cyWindowBorders := NumGet(windowinfo, 52, "Int")
+
+		; Inset the client rect by the border size
+		NumPut(NumGet(lParam+0, "Int") + cxWindowBorders, lParam+0, "Int")
+		NumPut(NumGet(lParam+4, "Int") + cyWindowBorders, lParam+4, "Int")
+		NumPut(NumGet(lParam+8, "Int") - cxWindowBorders, lParam+8, "Int")
+		NumPut(NumGet(lParam+12, "Int") - cyWindowBorders, lParam+12, "Int")
+
+		return 1
 	}
 
 	WM_NCACTIVATE(args*) {
@@ -364,7 +455,6 @@ class EzGui {
 
 
 	WM_NCHITTEST(wParam, lParam, args*) {
-		static HT_VALUES := [[13, 12, 14], [10, 1, 11], [16, 15, 17]]
 		if (A_Gui != this.controls.gui)
 			return
 		border := this.config.bordersize
@@ -375,7 +465,7 @@ class EzGui {
 		row := (x < wX + border) ? 1 : (x >= wX + wW - border) ? 3 : 2
 		col := (y < wY + border) ? 1 : (y >= wY + wH - border) ? 3 : 2
 
-		return HT_VALUES[col, row]
+		return EzGuiHelper.HT_VALUES[col, row]
 	}
 
 
@@ -388,7 +478,39 @@ class EzGui {
 			h := lParam<<32>>48
 			DllCall("MoveWindow", "UPtr", this.controls.wb, "Int", 0, "Int", 0, "Int", w, "Int", h, "UInt", 0)
 		}
-		return 1
+		return 0
+	}
+
+	WindowProc(msg, wparam, lparam) {
+		hWnd := this
+		this := Object(A_EventInfo)
+
+		if (msg == 0x84) {
+			x := lParam<<48>>48, y := lParam<<32>>48
+
+			; Get the window position for comparison
+			WinGetPos wX, wY, wW, wH, % "ahk_id" this.controls.gui
+
+			; Calculate positions in the lookup tables
+			row := (x < wX + this.config.bordersize) ? 1 : (x >= wX + wW - this.config.bordersize) ? 3 : 2
+			col := (y < wY + this.config.bordersize) ? 1 : (y >= wY + wH - this.config.bordersize) ? 3 : 2
+
+			return EzGuiHelper.HT_VALUES[col, row]
+		}
+		else if (Msg == 0xA1)
+		{
+			; Hoist nonclient clicks to main window
+			return DllCall("SendMessage", "Ptr", this.hWnd, "UInt", Msg, "UPtr", wParam, "Ptr", lParam, "Ptr")
+		}
+
+		Critical Off
+		return DllCall("CallWindowProc"
+		, "Ptr", this.pWndProcOld ; WNDPROC lpPrevWndFunc
+		, "Ptr", hWnd             ; HWND    hWnd
+		, "UInt", Msg             ; UINT    Msg
+		, "UPtr", wParam          ; WPARAM  wParam
+		, "Ptr", lParam           ; LPARAM  lParam
+		, "Ptr") ; LRESULT
 	}
 }
 
