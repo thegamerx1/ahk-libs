@@ -1,0 +1,259 @@
+html,
+body {
+	scrollbar-face-color: #929292;
+	scrollbar-arrow-color: #dbdbdb;
+	scrollbar-track-color: #666;
+	-ms-user-select: none;
+	user-select: none;
+	height: 100%;
+}
+body {
+	box-shadow: inset 0px 0px 14px -4px #000;
+	border: 1px solid #3c3f45;
+	height: 100%;
+	overflow: hidden;
+	padding-top: 31px !important;
+}
+body.active ahk-nav header {
+	background-color: #3a3a3a;
+}
+body.active ahk-nav header span.title {
+	color: #b1aeae;
+}
+main {
+	height: 100%;
+	flex: 1;
+	display: flex;
+}
+main .container {
+	margin: 10px;
+}
+main #console-container {
+	flex-grow: 2.5;
+}
+input::-ms-clear {
+	display: none;
+}
+*:focus {
+	outline: none !important;
+}
+p,
+span,
+label,
+button {
+	-ms-user-select: none;
+	user-select: none;
+	cursor: default;
+}
+.modal {
+	margin-top: 35px;
+}
+.modal .modal-content {
+	border-radius: 3px;
+}
+.modal .modal-content .modal-header {
+	padding: 8px 10px;
+	font-size: 1.1em;
+}
+.modal .modal-content .modal-footer {
+	padding: 10px;
+}
+ahk-nav header {
+	z-index: 10000;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 32px;
+	background-color: #525252;
+}
+ahk-nav header > span {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: #b1afaf;
+	z-index: 0;
+}
+ahk-nav header .buttons {
+	z-index: 5;
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	display: flex;
+}
+ahk-nav header .buttons span {
+	flex: 1;
+	align-content: center;
+	padding: 0 16px;
+	transition: background 0.1s;
+	min-width: 43px;
+}
+ahk-nav header .buttons span svg {
+	width: 11px;
+}
+ahk-nav header .buttons span svg path,
+ahk-nav header .buttons span svg rect,
+ahk-nav header .buttons span svg polygon {
+	fill: #e4e2e1;
+}
+ahk-nav header .buttons span:hover {
+	background: rgba(255, 255, 255, 0.082);
+}
+ahk-nav header .buttons span:hover[name="close"] {
+	background: #df4756;
+}
+.console {
+	height: 100%;
+	margin: 3px;
+	padding: 0.3em;
+	border: 0;
+	-ms-user-select: text;
+	user-select: text;
+	overflow: auto;
+	word-wrap: normal;
+}
+.console code {
+	color: #32cd32;
+	font-size: small;
+	font-family: "Monospace", "Consolas";
+}
+.nav-progress {
+	display: none;
+	border-radius: 0 0 2px 2px;
+	height: 5px;
+	margin-top: -1px;
+	margin-bottom: -4px;
+	opacity: 0;
+	transition: 1s all;
+}
+.nav-progress .progress-bar {
+	transition: 5s width;
+	height: 100%;
+	background: #6776ff;
+	justify-content: center;
+	align-items: center;
+	font-family: Consolas;
+}
+.nav-progress.show {
+	display: block;
+	opacity: 0.5;
+}
+#loader {
+	z-index: 99999999;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	background: #333;
+}
+#loader.hide {
+	animation: removeLoader 0.5s;
+	animation-fill-mode: forwards;
+}
+@keyframes removeLoader {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		visibility: hidden;
+	}
+}
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+.progress {
+	position: relative;
+}
+.progress > span {
+	font-family: Consolas;
+	font-size: medium;
+	position: absolute;
+	left: 0;
+	right: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	bottom: 0;
+	top: 0;
+}
+.loader::before {
+	content: "";
+	display: inline-block;
+	box-sizing: content-box;
+	margin: auto 0;
+	width: 2em;
+	height: 2em;
+	border-radius: 50%;
+	border: 3px solid #ccc;
+	border-top-color: #5264ff;
+	animation: spin 0.6s linear infinite;
+}
+.loader-sm::before {
+	width: 1em;
+	height: 1em;
+}
+.fit-image {
+	justify-content: center;
+	align-content: center;
+	display: flex;
+	overflow: hidden;
+	max-height: 100%;
+	max-width: 100%;
+}
+.fit-image img {
+	width: 100%;
+	max-height: 100%;
+	max-width: 100%;
+}
+.notransition {
+	transition: 0.05s;
+}
+.action-modal .modal-dialog .modal-content {
+	justify-content: center;
+	align-items: center;
+	min-width: 400px;
+	width: 100%;
+	margin: 0;
+	padding: 2em;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+.action-modal .modal-dialog .modal-content .progress {
+	margin-top: 0.2em;
+	width: 100%;
+}
+.action-modal .modal-dialog .modal-content span.close {
+	position: absolute;
+	top: 0;
+	right: 0;
+	margin: 0.3em;
+	margin-top: 0.2em;
+	overflow: hidden;
+	transition: all 0.1s;
+	font-family: serif;
+	font-size: 2em;
+	cursor: pointer;
+}
+.action-modal .modal-dialog .modal-content span.close:hover {
+	color: #f26f6f;
+}
+.action-modal .modal-dialog .modal-content .title {
+	font-size: 1.5em;
+}
+.action-modal .modal-dialog .modal-content .actions {
+	display: flex;
+	justify-content: center;
+	flex-direction: row;
+}
+.action-modal .modal-dialog .modal-content .actions button {
+	border-radius: 0.25em;
+	margin: 0.3em;
+	min-width: 5em;
+}
