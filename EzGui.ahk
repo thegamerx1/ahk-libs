@@ -19,6 +19,8 @@ class EzGuiHelper {
 		inject := ""
 		for _, value in toInject {
 			file := A_MyDocuments "\Autohotkey\lib\EzGui\" value
+			if !FileExist(file)
+				file := A_ScriptDir "\lib\EzGui\" value
 			inject .= format(value ~= ".css" ? templatecss : templatejs, FileRead(file))
 		}
 		return inject
