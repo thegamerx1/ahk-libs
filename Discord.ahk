@@ -93,10 +93,10 @@ class Discord {
 	}
 
 	class cache {
-		guild := {}
-		user := {}
-		dm := {}
-		msg := {}
+		static guild := {}
+		static user := {}
+		static dm := {}
+		static msg := {}
 
 		init(byref parent) {
 			this.api := parent
@@ -174,16 +174,10 @@ class Discord {
 			members[1].roles.push(guild)
 		}
 
-		guildSet(guild, data) {
-			this.guild[guild] := data
-			for _, value in this.guild[guild].members {
-				index := this.memberGet(guild, value.user.id)
-				member := this.guild[guild].members[index]
-				for _, role in member.roles {
-					if role = guild
-						return
-				}
-				member.roles.push(guild)
+		guildSet(id, data) {
+			this.guild[id] := data
+			for index, value in data.members {
+				data.members[index].roles.push(id)
 			}
 		}
 
@@ -543,10 +537,10 @@ class Discord {
 				this.log(".Succesfully resumed")
 
 			case "GUILD_CREATE":
+				this.cache.guildSet(data.d.id, data.d)
 				if !this.lastguildtime
 					this.lastguildtimer := new timer(ObjBindMethod(this, "checkguildsReady"), 50)
 				this.lastguildtime := new counter(, true)
-				this.cache.guildSet(data.d.id, data.d)
 			case "GUILD_UPDATE":
 				this.cache.guildUpdate(data.d.guild_id, data.d)
 			case "GUILD_DELETE":
@@ -606,7 +600,7 @@ class Discord {
 		? Websocket
 	*/
 
-	OnMessage(data) {
+	OnMessage(byref data) {
 		data := JSON.load(data)
 		if Data.s
 			this.seq := Data.s

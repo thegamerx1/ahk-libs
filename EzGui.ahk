@@ -243,6 +243,12 @@ class EzGui {
 		}
 	}
 
+	move(x, y) {
+		if !this.visible
+			return
+		Gui % this.controls.gui ":show", x%x%, y%y%
+	}
+
 	handleExit(Reason, Code) {
 		if (contains(Reason, ["Shutdown"]) || Code = -1)
 			return
