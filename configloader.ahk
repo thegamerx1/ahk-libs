@@ -3,24 +3,31 @@
 class configLoader {
 	__New(file, default := "", readonly := false) {
 		this.file := file
-		if (!IsObject(default) && default)
+		if (!IsObject(default) && default) {
 			throw Exception("Invalid default object", -1)
+		}
+
 		this.readonly := readonly
 		this.default := default
-		if !FileExist(this.file)
+		if !FileExist(this.file) {
 			this.fixfile()
+		}
 
 		this.loadfile()
 		if !isObject(this.data) {
 			this.fixfile()
 		}
-		if readonly
+
+		if readonly {
 			return this.data
+		}
 	}
 
 	fixfile() {
-		if this.readonly
+		if this.readonly {
 			throw Exception(this.file " is broken!", -2)
+		}
+
 		debug.print("Fixing", {label: this.file})
 
 		file := FileOpen(this.file, "w")

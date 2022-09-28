@@ -2,12 +2,12 @@
 #Persistent
 #NoEnv
 #MaxThreadsPerHotkey 1
-#MaxHotkeysPerInterval 999
-#MaxThreads 15
+#MaxHotkeysPerInterval 200
+#MaxThreads 6
 #InputLevel 1
 #KeyHistory 0
 #warn all, OutputDebug
-SetBatchLines -1
+SetBatchLines 50
 AutoTrim Off
 ListLines Off
 SendMode Input
