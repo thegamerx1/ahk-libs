@@ -278,7 +278,6 @@ TypeOf(what) {
 
 reload(args := "") {
 	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
-	ExitApp
 }
 
 Bool(bool) {
