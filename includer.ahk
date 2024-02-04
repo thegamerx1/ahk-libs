@@ -1,11 +1,20 @@
 #include <functionsahkshouldfuckinghave>
+#include <FileInstall>
+#include <JSON>
+
 class includer {
 	init(pathToFolder) {
+		if A_IsCompiled {
+			this.list := JSON.Load(GetScriptResource("_includer.txt"))
+			return
+		}
+
 		this.list := {}
 		this.file := pathToFolder "/_includer.ahk"
+		this.listFile := "_includer.txt"
 		FileRead extensionlist, % this.file
 
-		checklist := ""
+		checklist := "FileInstall, " this.listFile ", ~`n"
 		Loop Files, %pathToFolder%/*.ahk, FR
 		{
 			if (SubStr(A_LoopFileName, 1, 1) = "_" || SubStr(getLast(A_LoopFileDir), 1, 1) = "_") {
@@ -17,14 +26,16 @@ class includer {
 				throw Exception("Error on command name: " A_LoopFileName, -1)
 			}
 
-			name := match.name
 			checklist .= "#include *i " A_LoopFilePath "`n"
-			this.list[A_LoopFileName] := {name: name, folder: A_LoopFileDir, path: A_LoopFilePath}
+			this.list[A_LoopFileName] := {name: match.name, folder: A_LoopFileDir, path: A_LoopFilePath}
 		}
 		if (extensionlist != checklist) {
+			listFile := FileOpen(this.listFile, "w")
+			listFile.Write(JSON.Dump(this.list))
+			listFile.Close()
 			file := FileOpen(this.file, "w")
-			file.write(checklist)
-			file.close()
+			file.Write(checklist)
+			file.Close()
 			this.restart()
 		}
 	}

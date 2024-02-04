@@ -20,7 +20,7 @@ class EzGuiHelper {
 		for _, value in toInject {
 			file := A_MyDocuments "\Autohotkey\lib\EzGui\" value
 			if !FileExist(file)
-				file := A_ScriptDir "\lib\EzGui\" value
+				file := A_ScriptDir "\Lib\EzGui\" value
 			inject .= format(value ~= ".css" ? templatecss : templatejs, FileRead(file))
 		}
 		return inject
@@ -29,26 +29,25 @@ class EzGuiHelper {
 	resolveLocal(html, dir) {
 		While match := regex(html, "\<link rel=""stylesheet"" href=""(?<src>.+?)\"" ?\/\>") {
 			src := StrReplace(match.src, "file://")
-			css := FileRead(dir src)
+			css := FileRead(dir "/" src)
 			html := StrReplace(html, match.0, "<style>" css "</style>")
 		}
 		While match := regex(html, "\<script src=""(?<src>.+?)""\>\</script\>") {
 			src := StrReplace(match.src, "file://")
-			css := FileRead(dir src)
+			css := FileRead(dir "/" src)
 			html := StrReplace(html, match.0, "<script>" css "</script>")
 		}
 		return html
 	}
 
 	inject(dir) {
-		dir := A_WorkingDir "\" dir "\"
-		html := FileRead(dir "index.html")
+		html := FileRead(dir "/index.html")
+		; TODO: css/sass compilation/minify support
 		pos := InStr(html, "<script") || InStr(html, "</body>")
 		if !pos {
 			this.fatalError("Could not find </body> or </script> in " file)
 		}
-		len := StrLen(html)
-		html := SubStr(html, 1, pos-1) this.generateInject() SubStr(html, pos, len-pos)
+		html := StrReplace(html, "<!-- inject.js -->", this.generateInject())
 		html := this.resolveLocal(html, dir)
 		return html
 	}
@@ -161,7 +160,7 @@ class EzGui {
 			if A_IsCompiled {
 				html := GetScriptResource(conf.browserhtml "minify/index.html")
 			} else {
-				html := EzGuiHelper.inject(conf.browserhtml)
+				html := EzGuiHelper.inject(A_WorkingDir "\" conf.browserhtml)
 			}
 			ComObjError(false)
 
