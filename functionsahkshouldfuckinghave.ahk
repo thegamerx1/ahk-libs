@@ -277,7 +277,11 @@ TypeOf(what) {
 }
 
 reload(args := "") {
-	run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
+	If A_IsCompiled {
+		run % """" A_ScriptFullPath """ /restart """ args
+	} else {
+		run % """" A_AhkPath """ /restart """ A_ScriptFullPath """ " args
+	}
 }
 
 Bool(bool) {
