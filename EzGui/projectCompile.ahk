@@ -1,26 +1,44 @@
 #include <mustExec>
-#include <EzGui>
+SetWorkingDir % A_InitialWorkingDir
 debug.init({console: True})
 
-if (A_Args[1]) {
-	file := A_Args[1]
-} else {
-	FileSelectFile, file, 1, ::{20d04fe0-3aea-1069-a2d8-08002b30309d},, main html (*.html)
+for i, arg in A_Args {
+	second_arg := A_Args[i+1]
+	if (arg == "-web") {
+		; folder path
+		IsValid(second_arg)
+		CompileWeb(second_arg)
+	} else if (arg == "-includer") {
+		IsValid(second_arg)
+		Includer(second_arg)
+	}
+}
+ExitApp 0
+
+IsValid(second_arg) {
+	if !second_arg {
+		debug.print("Invalid parameter following " arg)
+		ExitApp 1
+	}
 }
 
-if !file
-	ExitApp 1
+CompileWeb(webDirectory) {
+	Debug.print("Compiling web folder " webDirectory)
+	html := EzGuiHelper.inject(webDirectory)
 
-WebDirectory := getPath(file)
-SetWorkingDir % WebDirectory
+	file := FileOpen(webDirectory "/minify/index.html", "w")
+	file.Write(html)
+	file.Close()
+}
 
-html := EzGuiHelper.inject(WebDirectory)
-
-file := FileOpen("minify/index.html", "w")
-file.Write(html)
-file.Close()
-Debug.print("done")
-ExitApp 0
+Includer(name) {
+	Debug.print("Generating includer " name)
+	gen_includer := new includer(name)
+	gen_includer.generate_list()
+	gen_includer.write()
+}
 
 #include <functionsahkshouldfuckinghave>
 #include <debug>
+#include <includer>
+#include <EzGui>
