@@ -1,4 +1,6 @@
 #include <mustExec>
+#NoTrayIcon
+
 SetWorkingDir % A_InitialWorkingDir
 debug.init({console: True})
 
@@ -11,6 +13,11 @@ for i, arg in A_Args {
 	} else if (arg == "-includer") {
 		IsValid(second_arg)
 		Includer(second_arg)
+	} else if (arg == "-sass") {
+		third_arg := A_Args[i+2]
+		IsValid(second_arg)
+		IsValid(third_arg)
+		SassCompile(second_arg, third_arg)
 	}
 }
 ExitApp 0
@@ -36,6 +43,12 @@ Includer(name) {
 	gen_includer := new includer(name)
 	gen_includer.generate_list()
 	gen_includer.write()
+}
+
+SassCompile(input, out) {
+	Debug.print("Compiling SASS " input " to " out)
+	FileCreateDir % getPath(out)
+	RunWait, "sass" "%input%" "%out%" --no-source-map --style compressed,,Hide
 }
 
 #include <functionsahkshouldfuckinghave>
