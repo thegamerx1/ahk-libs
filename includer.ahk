@@ -3,19 +3,18 @@
 #include <JSON>
 
 class includer {
-	init(pathToFolder) {
-		if A_IsCompiled {
-			this.list := JSON.Load(GetScriptResource("_includer.txt"))
-			return
-		}
+	__New(folder) {
+		this.folder := folder
+		this.listFile := folder "/_includer.txt"
+		this.includeFile := this.folder "/_includer.ahk"
+	}
 
-		this.list := {}
-		this.file := pathToFolder "/_includer.ahk"
-		this.listFile := "_includer.txt"
-		FileRead extensionlist, % this.file
+	generate_list() {
+		local list := {}
+		local checklist := "FileInstall, " this.listFile ", ~`n"
 
-		checklist := "FileInstall, " this.listFile ", ~`n"
-		Loop Files, %pathToFolder%/*.ahk, FR
+		local folder := this.folder
+		Loop Files, %folder%/*.ahk, FR
 		{
 			if (SubStr(A_LoopFileName, 1, 1) = "_" || SubStr(getLast(A_LoopFileDir), 1, 1) = "_") {
 				continue
@@ -27,17 +26,34 @@ class includer {
 			}
 
 			checklist .= "#include *i " A_LoopFilePath "`n"
-			this.list[A_LoopFileName] := {name: match.name, folder: A_LoopFileDir, path: A_LoopFilePath}
+			list[A_LoopFileName] := {name: match.name, folder: A_LoopFileDir, path: A_LoopFilePath}
 		}
-		if (extensionlist != checklist) {
-			listFile := FileOpen(this.listFile, "w")
-			listFile.Write(JSON.Dump(this.list))
-			listFile.Close()
-			file := FileOpen(this.file, "w")
-			file.Write(checklist)
-			file.Close()
+		this.list := list
+		this.checklist := checklist
+	}
+
+	init() {
+		if A_IsCompiled {
+			this.list := JSON.Load(GetScriptResource(this.folder "/_includer.txt"))
+			return
+		}
+
+		this.generate_list()
+		FileRead extensionlist, % this.includeFile
+
+		if (extensionlist != this.checklist) {
+			this.write()
 			this.restart()
 		}
+	}
+
+	write() {
+		local listFile := FileOpen(this.listFile, "w")
+		listFile.Write(JSON.Dump(this.list))
+		listFile.Close()
+		local includerFile := FileOpen(this.includeFile, "w")
+		includerFile.Write(this.checklist)
+		includerFile.Close()
 	}
 
 	restart() {
