@@ -1,14 +1,17 @@
 {
 	"presets": [
-		["@babel/preset-env", {
-			"loose": true,
-			"modules": false,
-			"targets": {
-				"ie": 11
-			},
-			"corejs": "2.6.12",
-			"useBuiltIns": "entry"
-		}]
+		[
+			"@babel/preset-env",
+			{
+				"loose": true,
+				"modules": false,
+				"targets": {
+					"ie": 11
+				},
+				"corejs": "3.22",
+				"useBuiltIns": "entry"
+			}
+		]
 	],
 	"comments": false
 }
